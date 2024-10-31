@@ -9,7 +9,7 @@ import java.time.LocalDate
 
 object Events: Table<Event>("events") {
     val id = long("id").primaryKey().bindTo { it.id }
-    val name = varchar("badge_name").bindTo { it.name }
+    val name = varchar("name").bindTo { it.name }
     val established = date("established").bindTo { it.established }
     val startDate = date("start_date").bindTo { it.startDate }
     val endDate = date("end_date").bindTo { it.endDate }

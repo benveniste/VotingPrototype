@@ -10,7 +10,7 @@ import java.time.LocalDate
 object Ballots: Table<Ballot>("ballots") {
     val id = long("id").primaryKey().bindTo { it.id }
     val eventId = long("event_id").bindTo { it.eventId }
-    val name = varchar("badge_name").bindTo { it.name }
+    val name = varchar("name").bindTo { it.name }
     val opens = date("voting_opens").bindTo { it.opens }
     val closes = date("voting_closes").bindTo { it.closes }
 }
