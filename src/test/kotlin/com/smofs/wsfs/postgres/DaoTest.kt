@@ -159,6 +159,7 @@ class DaoTest {
         val added = database.insert(Votes) {
             set(it.lineItemId, lineItem.id)
             set(it.memberId, member.id)
+            set(it.nomineeId, nominee.id)
             set(it.description, nominee.description)
             set(it.castAt, Instant.now())
             set(it.ordinal, rank)
