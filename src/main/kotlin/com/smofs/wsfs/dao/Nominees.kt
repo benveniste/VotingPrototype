@@ -7,12 +7,12 @@ import org.ktorm.schema.varchar
 
 object Nominees: Table<Nominee>("nominees") {
     val id = long("id").primaryKey().bindTo { it.id }
-    val lineItemId = long("lineitem_id").bindTo { it.lineItemId }
+    val categoryId = long("category_id").bindTo { it.categoryId }
     val description = varchar("description").bindTo { it.description }
 }
 
 interface Nominee : Entity<Nominee> {
     val id: Long
-    val lineItemId: Long
+    val categoryId: Long
     val description: String
 }

@@ -3,12 +3,12 @@ package com.smofs.wsfs.postgres
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.greaterThanOrEqualTo
-import com.smofs.wsfs.dao.Ballot
-import com.smofs.wsfs.dao.Ballots
 import com.smofs.wsfs.dao.Event
 import com.smofs.wsfs.dao.Events
-import com.smofs.wsfs.dao.LineItem
-import com.smofs.wsfs.dao.LineItems
+import com.smofs.wsfs.dao.Category
+import com.smofs.wsfs.dao.Categories
+import com.smofs.wsfs.dao.Election
+import com.smofs.wsfs.dao.Elections
 import com.smofs.wsfs.dao.Member
 import com.smofs.wsfs.dao.Members
 import com.smofs.wsfs.dao.Nominee
@@ -49,6 +49,7 @@ class DaoTest {
         database.insert(Persons) {
             set(it.surName, "Montoya")
             set(it.firstName, "Flamingo")
+            set(it.suffix, "III")
             set(it.email, "flamingo@wemightneedthat.com")
             set(it.addr1, "123 Main St.")
             set(it.city, "Anytown")
@@ -98,52 +99,52 @@ class DaoTest {
         return lookup.first()
     }
 
-    private fun ballot(event: Event): Ballot {
+    private fun election(event: Event): Election {
         val today = LocalDate.now()
-        database.insert(Ballots) {
+        database.insert(Elections) {
             set(it.eventId, event.id)
             set(it.name, "Testor")
             set(it.opens, today.minusWeeks(1))
             set(it.closes, today.plusMonths(2))
         }
-        val lookup = database.from(Ballots)
+        val lookup = database.from(Elections)
             .select()
             .where {
-                (Ballots.eventId eq event.id) and (Ballots.name eq "Testor")
+                (Elections.eventId eq event.id) and (Elections.name eq "Testor")
             }
             .map {
-                Ballots.createEntity(it)
+                Elections.createEntity(it)
             }
         assertThat("Not found?", lookup.size, equalTo(1))
         return lookup.first()
     }
 
-    private fun lineitem(ballot: Ballot, name: String): LineItem {
-        database.insert(LineItems) {
-            set(it.ballotId, ballot.id)
-            set(it.contest, name)
+    private fun category(election: Election, name: String): Category {
+        database.insert(Categories) {
+            set(it.electionId, election.id)
+            set(it.category, name)
         }
-        val lookup = database.from(LineItems)
+        val lookup = database.from(Categories)
             .select()
             .where {
-                (LineItems.ballotId eq ballot.id) and (LineItems.contest eq name)
+                (Categories.electionId eq election.id) and (Categories.category eq name)
             }
             .map {
-                LineItems.createEntity(it)
+                Categories.createEntity(it)
             }
         assertThat("Not found?", lookup.size, equalTo(1))
         return lookup.first()
     }
 
-    private fun nominee(lineItem: LineItem, name: String): Nominee {
+    private fun nominee(category: Category, name: String): Nominee {
         database.insert(Nominees) {
-            set(it.lineItemId, lineItem.id)
+            set(it.categoryId, category.id)
             set(it.description, name)
         }
         val lookup = database.from(Nominees)
             .select()
             .where {
-                (Nominees.lineItemId eq lineItem.id) and (Nominees.description eq name)
+                (Nominees.categoryId eq category.id) and (Nominees.description eq name)
             }
             .map {
                 Nominees.createEntity(it)
@@ -152,12 +153,13 @@ class DaoTest {
         return lookup.first()
     }
 
-    private fun vote(lineItem: LineItem, member: Member, rank: Int, nominee: Nominee) {
-        if (lineItem.id != nominee.lineItemId) {
-            throw IllegalArgumentException("Not a valid nominee")
+    private fun vote(category: Category, member: Member, rank: Int, nominee: Nominee) {
+        require(category.id == nominee.categoryId) {
+            "Not a valid nominee"
         }
+
         val added = database.insert(Votes) {
-            set(it.lineItemId, lineItem.id)
+            set(it.categoryId, category.id)
             set(it.memberId, member.id)
             set(it.nomineeId, nominee.id)
             set(it.description, nominee.description)
@@ -167,9 +169,9 @@ class DaoTest {
         assertThat("Not added?", added, equalTo(1))
     }
 
-    private fun vote(lineItem: LineItem, member: Member, rank: Int, description: String) {
+    private fun vote(category: Category, member: Member, rank: Int, description: String) {
         val added = database.insert(Votes) {
-            set(it.lineItemId, lineItem.id)
+            set(it.categoryId, category.id)
             set(it.memberId, member.id)
             set(it.description, description)
             set(it.castAt, Instant.now())
@@ -185,23 +187,23 @@ class DaoTest {
             try {
                 val flamingo = person()
                 val event = event()
-                val ballot = ballot(event)
-                val lineitem1 = lineitem(ballot, "Best AdHominem")
-                val lineitem2 = lineitem(ballot, "Best Oxymoron")
-                val nominee1 = nominee(lineitem1, "Mother smelled of Elderberries")
-                val nominee2 = nominee(lineitem2, "Open Secret")
+                val election = election(event)
+                val category1 = category(election, "Best Ad Hominem")
+                val category2 = category(election, "Best Oxymoron")
+                val nominee1 = nominee(category1, "Mother smelled of Elderberries")
+                val nominee2 = nominee(category2, "Open Secret")
                 val member = member(event, flamingo)
-                vote(lineitem1, member, 1, nominee1)
-                vote(lineitem1, member, 2, "Write-in")
-                vote(lineitem2, member, 1, nominee2)
-                vote(lineitem2, member, 2, "Noah Ward")
+                vote(category1, member, 1, nominee1)
+                vote(category1, member, 2, "Write-in")
+                vote(category2, member, 1, nominee2)
+                vote(category2, member, 2, "Noah Ward")
                 try {
-                    vote(lineitem2, member, 3, nominee1)
+                    vote(category2, member, 3, nominee1)
                 } catch (expected: Exception) {
                     assert(expected.message == "Not a valid nominee") { "Wrong message?" }
                 }
                 try {
-                    vote(lineitem2, member, 1, "Duplicate")
+                    vote(category2, member, 1, "Duplicate")
                 } catch (expected: PSQLException) {
                     assert(expected.message!!.contains("duplicate key")) { "Wrong message?" }
                 }

@@ -10,6 +10,8 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest
 import javax.sql.DataSource
 
+private const val POOL_SIZE = 10
+
 class WSFSDataSource {
     private val logger = KotlinLogging.logger {}
     private val mapper = jacksonObjectMapper()
@@ -24,6 +26,7 @@ class WSFSDataSource {
 
     fun getDataSource(): DataSource {
         val credMap = mapper.readValue(getSecret("WSFS-Database"), mapTypeRef)
+
         logger.debug { credMap }
 
         val config = HikariConfig()
@@ -31,7 +34,7 @@ class WSFSDataSource {
         config.username = credMap["username"]
         config.password = credMap["password"]
         config.driverClassName = "org.postgresql.Driver"
-        config.maximumPoolSize = 10 // Everybody into the pool
+        config.maximumPoolSize = POOL_SIZE // Everybody into the pool
 
         return HikariDataSource(config)
     }

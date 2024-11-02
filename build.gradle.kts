@@ -1,9 +1,15 @@
+import io.gitlab.arturbosch.detekt.Detekt
 import org.gradle.api.JavaVersion.VERSION_21
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
     kotlin("jvm") version "2.0.20"
+    id("io.gitlab.arturbosch.detekt").version("1.23.7")
+}
+
+tasks.withType<Detekt>().configureEach {
+    jvmTarget = "21"
 }
 
 buildscript {
@@ -64,7 +70,7 @@ dependencies {
 
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
 
-    implementation("org.postgresql:postgresql:42.1.4")
+    implementation("org.postgresql:postgresql:42.7.4")
     implementation("com.zaxxer:HikariCP:6.0.0")
     implementation("org.ktorm:ktorm-core:3.3.0")
 

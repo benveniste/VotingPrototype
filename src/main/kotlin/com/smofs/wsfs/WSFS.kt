@@ -24,13 +24,10 @@ import org.http4k.server.asServer
 import org.http4k.template.JTETemplates
 import org.http4k.template.viewModel
 
+const val PORT = 9000
+
 // this is a micrometer registry used mostly for testing - substitute the correct implementation.
 val registry = SimpleMeterRegistry()
-// AWS config and credentials
-val awsRegion = "us-east-1"
-val awsService = "s3"
-val awsAccessKey = "myGreatAwsAccessKey"
-val awsSecretKey = "myGreatAwsSecretKey"
 val app: HttpHandler = routes(
     "/ping" bind GET to {
         Response(OK).body("pong")
@@ -65,7 +62,7 @@ fun main() {
             .then(ServerFilters.MicrometerMetrics.RequestCounter(registry))
             .then(ServerFilters.MicrometerMetrics.RequestTimer(registry)).then(app)
 
-    val server = printingApp.asServer(Undertow(9000)).start()
+    val server = printingApp.asServer(Undertow(PORT)).start()
 
     println("Server started on " + server.port())
 }

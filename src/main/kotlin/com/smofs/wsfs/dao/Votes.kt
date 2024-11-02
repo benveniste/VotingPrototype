@@ -10,9 +10,9 @@ import java.time.Instant
 
 object Votes: Table<Vote>("votes") {
     val id = long("id").primaryKey().bindTo { it.id }
-    val lineItemId = long("lineitem_id").bindTo { it.lineItemId }
+    val categoryId = long("category_id").bindTo { it.categoryId }
     val memberId = long("member_id").bindTo { it.memberId }
-    val nomineeId = long("nominee_id").bindTo { it.nominee_id }
+    val nomineeId = long("nominee_id").bindTo { it.nomineeId }
     val description = varchar("description").bindTo { it.description }
     val ordinal = int("ordinal").bindTo { it.ordinal }
     val castAt = timestamp("cast_at").bindTo { it.castAt }
@@ -20,10 +20,10 @@ object Votes: Table<Vote>("votes") {
 
 interface Vote : Entity<Vote> {
     val id: Long
-    val lineItemId: Long
+    val categoryId: Long
     val memberId: Long
     val ordinal: Int
     val castAt: Instant
-    val nominee_id: Long?
+    val nomineeId: Long?
     val description: String?
 }

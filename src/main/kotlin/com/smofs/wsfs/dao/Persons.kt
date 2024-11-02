@@ -7,9 +7,11 @@ import org.ktorm.schema.varchar
 
 object Persons: Table<Person>("persons") {
     val id = long("id").primaryKey().bindTo { it.id }
+    val prefix = varchar("prefix").bindTo { it.prefix }
     val firstName = varchar("first_name").bindTo { it.firstName }
     val middleName = varchar("middle_name").bindTo { it.middleName }
     val surName = varchar("surname").bindTo { it.surName }
+    val suffix = varchar("suffix").bindTo { it.suffix }
     val addr1 = varchar("addr_line_1").bindTo { it.addr1 }
     val addr2 = varchar("addr_line_2").bindTo { it.addr2 }
     val city = varchar("city").bindTo { it.city }
@@ -24,7 +26,9 @@ interface Person : Entity<Person> {
     val id: Long
     val firstName: String?
     val middleName: String?
+    val prefix: String?
     val surName: String
+    val suffix: String?
     val addr1: String
     val addr2: String?
     val city: String?

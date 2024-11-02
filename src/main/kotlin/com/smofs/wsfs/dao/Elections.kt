@@ -7,7 +7,7 @@ import org.ktorm.schema.long
 import org.ktorm.schema.varchar
 import java.time.LocalDate
 
-object Ballots: Table<Ballot>("ballots") {
+object Elections: Table<Election>("elections") {
     val id = long("id").primaryKey().bindTo { it.id }
     val eventId = long("event_id").bindTo { it.eventId }
     val name = varchar("name").bindTo { it.name }
@@ -15,7 +15,7 @@ object Ballots: Table<Ballot>("ballots") {
     val closes = date("voting_closes").bindTo { it.closes }
 }
 
-interface Ballot : Entity<Ballot> {
+interface Election : Entity<Election> {
     val id: Long
     val eventId: Long
     val name: String
