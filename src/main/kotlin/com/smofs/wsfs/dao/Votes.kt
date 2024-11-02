@@ -12,7 +12,7 @@ object Votes: Table<Vote>("votes") {
     val id = long("id").primaryKey().bindTo { it.id }
     val categoryId = long("category_id").bindTo { it.categoryId }
     val memberId = long("member_id").bindTo { it.memberId }
-    val nomineeId = long("nominee_id").bindTo { it.nomineeId }
+    val candidateId = long("candidate_id").bindTo { it.candidateId }
     val description = varchar("description").bindTo { it.description }
     val ordinal = int("ordinal").bindTo { it.ordinal }
     val castAt = timestamp("cast_at").bindTo { it.castAt }
@@ -24,6 +24,6 @@ interface Vote : Entity<Vote> {
     val memberId: Long
     val ordinal: Int
     val castAt: Instant
-    val nomineeId: Long?
+    val candidateId: Long?
     val description: String?
 }

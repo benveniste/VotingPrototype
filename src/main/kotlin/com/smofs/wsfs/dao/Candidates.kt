@@ -5,13 +5,13 @@ import org.ktorm.schema.Table
 import org.ktorm.schema.long
 import org.ktorm.schema.varchar
 
-object Nominees: Table<Nominee>("nominees") {
+object Candidates: Table<Candidate>("candidates") {
     val id = long("id").primaryKey().bindTo { it.id }
     val categoryId = long("category_id").bindTo { it.categoryId }
     val description = varchar("description").bindTo { it.description }
 }
 
-interface Nominee : Entity<Nominee> {
+interface Candidate : Entity<Candidate> {
     val id: Long
     val categoryId: Long
     val description: String

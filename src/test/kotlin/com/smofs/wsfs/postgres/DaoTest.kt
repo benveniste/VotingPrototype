@@ -11,8 +11,9 @@ import com.smofs.wsfs.dao.Election
 import com.smofs.wsfs.dao.Elections
 import com.smofs.wsfs.dao.Member
 import com.smofs.wsfs.dao.Members
-import com.smofs.wsfs.dao.Nominee
-import com.smofs.wsfs.dao.Nominees
+import com.smofs.wsfs.dao.Candidate
+import com.smofs.wsfs.dao.Candidates
+import com.smofs.wsfs.dao.Eligibilities
 import com.smofs.wsfs.dao.Person
 import com.smofs.wsfs.dao.Persons
 import com.smofs.wsfs.dao.Votes
@@ -24,7 +25,9 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.fail
 import org.ktorm.database.Database
 import org.ktorm.dsl.and
+import org.ktorm.dsl.count
 import org.ktorm.dsl.eq
+import org.ktorm.dsl.forEach
 import org.ktorm.dsl.from
 import org.ktorm.dsl.insert
 import org.ktorm.dsl.map
@@ -86,6 +89,7 @@ class DaoTest {
             set(it.joinedAt, Instant.now())
         }
         assertThat("Not added?", added, equalTo(1))
+
         val lookup = database.from(Members)
             .select()
             .where {
@@ -94,8 +98,15 @@ class DaoTest {
             .map {
                 Members.createEntity(it)
             }
-
         assertThat("Not found?", lookup.size, greaterThanOrEqualTo(1))
+
+        // For testing porpoises, make them eligible for all elections.
+        database.from(Elections).select(Elections.id).where(Elections.eventId eq(event.id)).forEach { row ->
+            database.insert(Eligibilities) {
+                set(it.memberId, lookup.first().id)
+                set(it.electionId, row[Elections.id])
+            }
+        }
         return lookup.first()
     }
 
@@ -136,33 +147,33 @@ class DaoTest {
         return lookup.first()
     }
 
-    private fun nominee(category: Category, name: String): Nominee {
-        database.insert(Nominees) {
+    private fun candidate(category: Category, name: String): Candidate {
+        database.insert(Candidates) {
             set(it.categoryId, category.id)
             set(it.description, name)
         }
-        val lookup = database.from(Nominees)
+        val lookup = database.from(Candidates)
             .select()
             .where {
-                (Nominees.categoryId eq category.id) and (Nominees.description eq name)
+                (Candidates.categoryId eq category.id) and (Candidates.description eq name)
             }
             .map {
-                Nominees.createEntity(it)
+                Candidates.createEntity(it)
             }
         assertThat("Not found?", lookup.size, equalTo(1))
         return lookup.first()
     }
 
-    private fun vote(category: Category, member: Member, rank: Int, nominee: Nominee) {
-        require(category.id == nominee.categoryId) {
-            "Not a valid nominee"
+    private fun vote(category: Category, member: Member, rank: Int, candidate: Candidate) {
+        require(category.id == candidate.categoryId) {
+            "Not a valid candidate"
         }
 
         val added = database.insert(Votes) {
             set(it.categoryId, category.id)
             set(it.memberId, member.id)
-            set(it.nomineeId, nominee.id)
-            set(it.description, nominee.description)
+            set(it.candidateId, candidate.id)
+            set(it.description, candidate.description)
             set(it.castAt, Instant.now())
             set(it.ordinal, rank)
         }
@@ -170,6 +181,16 @@ class DaoTest {
     }
 
     private fun vote(category: Category, member: Member, rank: Int, description: String) {
+        database.from(Eligibilities)
+            .select(count(Eligibilities.status))
+            .where(
+                (Eligibilities.memberId eq member.id)
+                        and (Eligibilities.electionId eq category.electionId)
+                        and (Eligibilities.status eq "ELIGIBLE")
+            ).forEach { row ->
+                assertThat("Ineligible?", row.getInt(1), equalTo(1))
+            }
+
         val added = database.insert(Votes) {
             set(it.categoryId, category.id)
             set(it.memberId, member.id)
@@ -190,17 +211,17 @@ class DaoTest {
                 val election = election(event)
                 val category1 = category(election, "Best Ad Hominem")
                 val category2 = category(election, "Best Oxymoron")
-                val nominee1 = nominee(category1, "Mother smelled of Elderberries")
-                val nominee2 = nominee(category2, "Open Secret")
+                val candidate1 = candidate(category1, "Mother smelled of Elderberries")
+                val candidate2 = candidate(category2, "Open Secret")
                 val member = member(event, flamingo)
-                vote(category1, member, 1, nominee1)
+                vote(category1, member, 1, candidate1)
                 vote(category1, member, 2, "Write-in")
-                vote(category2, member, 1, nominee2)
+                vote(category2, member, 1, candidate2)
                 vote(category2, member, 2, "Noah Ward")
                 try {
-                    vote(category2, member, 3, nominee1)
+                    vote(category2, member, 3, candidate1)
                 } catch (expected: Exception) {
-                    assert(expected.message == "Not a valid nominee") { "Wrong message?" }
+                    assert(expected.message == "Not a valid candidate") { "Wrong message?" }
                 }
                 try {
                     vote(category2, member, 1, "Duplicate")
