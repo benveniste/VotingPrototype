@@ -1,5 +1,6 @@
 package com.smofs.wsfs.postgres
 
+import at.favre.lib.crypto.bcrypt.BCrypt
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.greaterThanOrEqualTo
@@ -44,15 +45,19 @@ import java.util.UUID
 val Database.personSequence get() = this.sequenceOf(Persons)
 val Database.eventSequence get() = this.sequenceOf(Events)
 
+private val BAD_PASSWORD = "Allen_Ludden".toCharArray()
+
 class DaoTest {
     private val logger = KotlinLogging.logger {}
-    private val database = assertDoesNotThrow { Database.connect(WSFSDataSource().getDataSource()) }
+    private val database = assertDoesNotThrow { Database.connect(WSFSDataSource().getTestDataSource()) }
 
     private fun person(): Person {
+
         database.insert(Persons) {
             set(it.surName, "Montoya")
             set(it.firstName, "Flamingo")
             set(it.suffix, "III")
+            set(it.password, String(BCrypt.withDefaults().hashToChar(13, BAD_PASSWORD)))
             set(it.email, "flamingo@wemightneedthat.com")
             set(it.addr1, "123 Main St.")
             set(it.city, "Anytown")
@@ -61,6 +66,7 @@ class DaoTest {
         }
         for (row in database.from(Persons).select()) {
             logger.info { row[Persons.surName] }
+            assert(BCrypt.verifyer().verify(BAD_PASSWORD, row[Persons.password]!!.toCharArray()).verified)
         }
         for (person in database.personSequence) {
             logger.info { "${person.firstName} ${person.surName} ${person.email}" }

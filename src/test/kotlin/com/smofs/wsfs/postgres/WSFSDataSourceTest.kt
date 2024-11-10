@@ -8,6 +8,7 @@ class WSFSDataSourceTest {
     fun setupTest() {
         assertDoesNotThrow {
             WSFSDataSource().getDataSource()
+            WSFSDataSource().getTestDataSource()
         }
     }
 }

@@ -11,7 +11,7 @@ class KtormSetupTest {
 
     @Test
     fun setup() {
-        val database = assertDoesNotThrow { Database.connect(WSFSDataSource().getDataSource()) }
+        val database = assertDoesNotThrow { Database.connect(WSFSDataSource().getTestDataSource()) }
         val sql = "SELECT * FROM persons"
         database.useConnection { conn ->
             conn.prepareStatement(sql).use { statement ->

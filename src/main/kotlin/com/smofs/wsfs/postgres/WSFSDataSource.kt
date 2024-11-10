@@ -24,18 +24,27 @@ class WSFSDataSource {
         return value
     }
 
-    fun getDataSource(): DataSource {
+    private fun get(name: String): DataSource {
         val credMap = mapper.readValue(getSecret("WSFS-Database"), mapTypeRef)
 
         logger.debug { credMap }
 
         val config = HikariConfig()
-        config.jdbcUrl = "jdbc:postgresql://${credMap["host"]}:${credMap["port"]}/${credMap["dbname"]}"
+        config.jdbcUrl = "jdbc:postgresql://${credMap["host"]}:${credMap["port"]}/${credMap[name]}"
         config.username = credMap["username"]
         config.password = credMap["password"]
         config.driverClassName = "org.postgresql.Driver"
         config.maximumPoolSize = POOL_SIZE // Everybody into the pool
 
         return HikariDataSource(config)
+
+    }
+
+    fun getDataSource(): DataSource {
+        return get("dbname")
+    }
+
+    fun getTestDataSource(): DataSource {
+        return get("testdbname")
     }
 }

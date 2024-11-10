@@ -115,6 +115,7 @@ CREATE TABLE public.persons (
     middle_name character varying(40),
     surname character varying(40) NOT NULL,
     suffix character varying(8),
+    password character varying(100),
     addr_line_1 character varying(46) NOT NULL,
     addr_line_2 character varying(46),
     city character varying(46),
