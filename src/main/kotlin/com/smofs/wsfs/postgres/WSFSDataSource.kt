@@ -47,4 +47,9 @@ class WSFSDataSource {
     fun getTestDataSource(): DataSource {
         return get("testdbname")
     }
+
+    fun getTripleDesKey(): ByteArray {
+        val credMap = mapper.readValue(getSecret("WSFS-Database"), mapTypeRef)
+        return credMap["tripleDesKey"]!!.toByteArray()
+    }
 }

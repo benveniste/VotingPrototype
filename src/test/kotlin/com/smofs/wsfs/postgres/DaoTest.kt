@@ -1,6 +1,7 @@
 package com.smofs.wsfs.postgres
 
 import at.favre.lib.crypto.bcrypt.BCrypt
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.greaterThanOrEqualTo
@@ -15,11 +16,15 @@ import com.smofs.wsfs.dao.Members
 import com.smofs.wsfs.dao.Candidate
 import com.smofs.wsfs.dao.Candidates
 import com.smofs.wsfs.dao.Eligibilities
+import com.smofs.wsfs.dao.Inflight
 import com.smofs.wsfs.dao.Person
 import com.smofs.wsfs.dao.Persons
 import com.smofs.wsfs.dao.Votes
+import com.smofs.wsfs.voting.Ballot
+import com.smofs.wsfs.voting.VoteText
 
 import mu.KotlinLogging
+import okhttp3.internal.toHexString
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -41,6 +46,12 @@ import org.postgresql.util.PSQLException
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
+import java.util.zip.CRC32
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 val Database.personSequence get() = this.sequenceOf(Persons)
 val Database.eventSequence get() = this.sequenceOf(Events)
@@ -50,8 +61,10 @@ private val BAD_PASSWORD = "Allen_Ludden".toCharArray()
 class DaoTest {
     private val logger = KotlinLogging.logger {}
     private val database = assertDoesNotThrow { Database.connect(WSFSDataSource().getTestDataSource()) }
+    private val mapper = jacksonObjectMapper()
 
     private fun person(): Person {
+
 
         database.insert(Persons) {
             set(it.surName, "Montoya")
@@ -207,6 +220,52 @@ class DaoTest {
         assertThat("Not added?", added, equalTo(1))
     }
 
+    @OptIn(ExperimentalEncodingApi::class)
+    private fun stash(ballot: Ballot) {
+        val testData = mapper.writeValueAsString(ballot)
+        val crc32 = CRC32()
+        crc32.update("UserSuppliedKey".toByteArray())
+        val ivSpec = IvParameterSpec(crc32.value.toHexString().toByteArray())
+        val skSpec = SecretKeySpec(WSFSDataSource().getTripleDesKey(), "TripleDes")
+        val cipher = Cipher.getInstance("TripleDES/CBC/PKCS5Padding")
+        cipher.init(Cipher.ENCRYPT_MODE, skSpec, ivSpec)
+        val encryptedMessage = Base64.encode(cipher.doFinal(testData.toByteArray()))
+        val added = database.insert(Inflight) {
+            set(it.memberId, ballot.member)
+            set(it.electionId, ballot.election)
+            set(it.ballot, encryptedMessage)
+        }
+        assertThat("Not added?", added, equalTo(1))
+        database.from(Inflight)
+            .select(Inflight.ballot)
+            .where(
+                (Inflight.memberId eq ballot.member) and (Inflight.electionId eq ballot.election)
+            ).forEach { row ->
+                cipher.init(Cipher.DECRYPT_MODE, skSpec, ivSpec)
+                val decryptedMessage = String(cipher.doFinal(Base64.decode(row.getString(1)!!.toByteArray())))
+                assertThat(decryptedMessage, equalTo(testData))
+            }
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    @Test
+    fun testor() {
+        val testData = """
+            This is a test.  For the next 60 seconds, this station will conduct a test
+            of the emergency broadcast system.  This is only a test.
+        """
+        val crc32 = CRC32()
+        crc32.update("UserSuppliedKey".toByteArray())
+        val ivSpec = IvParameterSpec(crc32.value.toHexString().toByteArray())
+        val skSpec = SecretKeySpec(WSFSDataSource().getTripleDesKey(), "TripleDes")
+        val cipher = Cipher.getInstance("TripleDES/CBC/PKCS5Padding")
+        cipher.init(Cipher.ENCRYPT_MODE, skSpec, ivSpec)
+        val encryptedMessage = Base64.encode(cipher.doFinal(testData.toByteArray()))
+        cipher.init(Cipher.DECRYPT_MODE, skSpec, ivSpec)
+        val decryptedMessage = String(cipher.doFinal(Base64.decode(encryptedMessage)))
+        assertThat(decryptedMessage, equalTo(testData))
+    }
+
     @Test
     fun schema() {
         val before = database.eventSequence.totalRecords
@@ -224,6 +283,10 @@ class DaoTest {
                 vote(category1, member, 2, "Write-in")
                 vote(category2, member, 1, candidate2)
                 vote(category2, member, 2, "Noah Ward")
+                val interimVote1 = VoteText(category1.category, mutableListOf(candidate1.description, "Write-in"))
+                val interimVote2 = VoteText(category2.category, mutableListOf(candidate2.description, "Noah Ward"))
+                stash(Ballot(member.id, election.id, mutableListOf(interimVote1, interimVote2)))
+
                 try {
                     vote(category2, member, 3, candidate1)
                 } catch (expected: Exception) {

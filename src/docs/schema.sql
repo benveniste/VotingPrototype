@@ -86,6 +86,17 @@ COMMENT ON TABLE public.events IS 'The convention or event owning elections.';
 ALTER TABLE public.events OWNER TO mhb;
 
 --
+-- Name: votes; Type: TABLE; Schema: public; Owner: mhb
+--
+DROP TABLE IF EXISTS public.inflight CASCADE;
+CREATE TABLE public.inflight (
+    id bigint NOT NULL,
+    member_id bigint NOT NULL,
+    election_id bigint NOT NULL,
+    ballot text NOT NULL
+);
+
+--
 -- Name: members; Type: TABLE; Schema: public; Owner: mhb
 --
 DROP TABLE IF EXISTS public.members CASCADE;
@@ -206,6 +217,18 @@ ALTER TABLE public.event_id_seq OWNER TO mhb;
 ALTER SEQUENCE public.event_id_seq OWNED BY public.events.id;
 
 --
+-- Name: inflight_id_seq; Type: SEQUENCE; Schema: public; Owner: mhb
+--
+CREATE SEQUENCE public.inflight_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ALTER TABLE public.inflight_id_seq OWNER TO mhb;
+ALTER SEQUENCE public.inflight_id_seq OWNED BY public.inflight.id;
+
+--
 -- Name: members_id_seq; Type: SEQUENCE; Schema: public; Owner: mhb
 --
 CREATE SEQUENCE public.members_id_seq
@@ -267,6 +290,11 @@ ALTER TABLE ONLY public.eligibilities ALTER COLUMN id SET DEFAULT nextval('publi
 ALTER TABLE ONLY public.events ALTER COLUMN id SET DEFAULT nextval('public.event_id_seq'::regclass);
 
 --
+-- Name: inflight id; Type: DEFAULT; Schema: public; Owner: mhb
+--
+ALTER TABLE ONLY public.inflight ALTER COLUMN id SET DEFAULT nextval('public.inflight_id_seq'::regclass);
+
+--
 -- Name: members id; Type: DEFAULT; Schema: public; Owner: mhb
 --
 ALTER TABLE ONLY public.members ALTER COLUMN id SET DEFAULT nextval('public.members_id_seq'::regclass);
@@ -310,6 +338,12 @@ ALTER TABLE ONLY public.eligibilities
 --
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT event_pkey PRIMARY KEY (id);
+
+--
+-- Name: inflight inflight_pkey; Type: CONSTRAINT; Schema: public; Owner: mhb
+--
+ALTER TABLE ONLY public.inflight
+    ADD CONSTRAINT inflight_pkey PRIMARY KEY (id);
 
 --
 -- Name: members members_pkey; Type: CONSTRAINT; Schema: public; Owner: mhb
@@ -363,6 +397,11 @@ CREATE INDEX idx_eligible_what ON public.eligibilities USING btree (election_id,
 -- Name: idx_eligible_who; Type: INDEX; Schema: public; Owner: mhb
 --
 CREATE UNIQUE INDEX idx_eligible_who ON public.eligibilities USING btree (member_id, election_id);
+
+--
+-- Name: idx_eligible_who; Type: INDEX; Schema: public; Owner: mhb
+--
+CREATE UNIQUE INDEX idx_inflight_who ON public.inflight USING btree (member_id, election_id);
 
 --
 -- Name: idx_m_event; Type: INDEX; Schema: public; Owner: mhb
