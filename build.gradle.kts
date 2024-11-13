@@ -70,7 +70,7 @@ dependencies {
 
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
 
-    implementation("at.favre.lib:bcrypt:0.10.2")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.79")
 
     implementation("org.postgresql:postgresql:42.7.4")
     implementation("com.zaxxer:HikariCP:6.0.0")

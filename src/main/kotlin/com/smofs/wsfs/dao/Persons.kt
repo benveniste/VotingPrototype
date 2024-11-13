@@ -13,6 +13,7 @@ object Persons: Table<Person>("persons") {
     val surName = varchar("surname").bindTo { it.surName }
     val suffix = varchar("suffix").bindTo { it.suffix }
     val password = varchar("password").bindTo { it.password }
+    val salt = varchar("salt").bindTo { it.salt }
     val addr1 = varchar("addr_line_1").bindTo { it.addr1 }
     val addr2 = varchar("addr_line_2").bindTo { it.addr2 }
     val city = varchar("city").bindTo { it.city }
@@ -31,6 +32,7 @@ interface Person : Entity<Person> {
     val surName: String
     val suffix: String?
     val password: String
+    val salt: String
     val addr1: String
     val addr2: String?
     val city: String?
