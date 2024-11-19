@@ -64,7 +64,7 @@ dependencies {
     implementation("org.http4k:http4k-format-jackson")
     implementation("org.http4k:http4k-metrics-micrometer")
     implementation("org.http4k:http4k-server-undertow")
-    implementation("org.http4k:http4k-template-jte")
+    implementation("org.http4k:http4k-template-handlebars")
 
     implementation("software.amazon.awssdk:secretsmanager:2.29.1")
 
