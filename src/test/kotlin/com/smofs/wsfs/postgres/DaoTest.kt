@@ -86,7 +86,7 @@ class DaoTest {
             set(it.country, "US")
         }
         for (row in database.from(Persons).select()) {
-            logger.info { row[Persons.surName] + ":" + row[Persons.password] }
+            logger.info { row[Persons.surName] + ": " + row[Persons.password] + ": " + row[Persons.salt] }
         }
         for (person in database.personSequence) {
             logger.info { "${person.firstName} ${person.surName} ${person.email}" }
