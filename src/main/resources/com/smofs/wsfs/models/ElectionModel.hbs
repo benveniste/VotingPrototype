@@ -1,0 +1,27 @@
+<html lang="en">
+<head>
+    <link href="/style.css" rel="stylesheet" type="text/css"/>
+    <title>Vote, damn it</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+
+<script type="text/babel">
+    function Hello() {
+      return <h1>Hello World!</h1>;
+    }
+
+    const container = document.getElementById('mydiv');
+    const root = ReactDOM.createRoot(container);
+    root.render(<Hello />)
+</script>
+
+<body>
+{{#each categories}}<h1>{{this.name}}</h1>
+    {{#each this.candidates}}
+        <p>{{this.description}}</p>
+    {{/each}}
+{{/each}}
+</body>
+</html>

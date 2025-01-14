@@ -4,8 +4,10 @@ import com.smofs.wsfs.formats.JacksonMessage
 import com.smofs.wsfs.formats.JacksonXmlMessage
 import com.smofs.wsfs.formats.jacksonMessageLens
 import com.smofs.wsfs.formats.jacksonXmlMessageLens
+import com.smofs.wsfs.models.EventModel
 import com.smofs.wsfs.models.TestViewModel
 import com.smofs.wsfs.models.oopsMyBad
+import com.smofs.wsfs.postgres.WSFSDataSource
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.http4k.core.ContentType.Companion.TEXT_HTML
 import org.http4k.core.Filter
@@ -25,6 +27,7 @@ import org.http4k.routing.routes
 import org.http4k.server.Undertow
 import org.http4k.server.asServer
 import org.http4k.template.HandlebarsTemplates
+import org.ktorm.database.Database
 
 const val PORT = 9000
 
@@ -34,6 +37,7 @@ val renderer = HandlebarsTemplates().CachingClasspath()
 val SetHtmlContentType = Filter { next ->
     { next(it).with(CONTENT_TYPE of TEXT_HTML) }
 }
+val database = Database.connect(WSFSDataSource().getDataSource())
 
 val app: HttpHandler = oopsMyBad(renderer).then(
     routes(
@@ -51,6 +55,12 @@ val app: HttpHandler = oopsMyBad(renderer).then(
 
         "testor" bind GET to SetHtmlContentType.then {
             Response(OK).body(renderer(TestViewModel("This is a test", WebForm())))
+        },
+
+        "random" bind GET to SetHtmlContentType.then {
+            val eventModel = EventModel(database, 1, WebForm())
+            val electionModel = eventModel.elections.find { it.electionId == 2L }
+            Response(OK).body(renderer(electionModel!!))
         },
 
         "/testing/hamkrest" bind GET to { request ->
