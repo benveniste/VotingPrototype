@@ -36,14 +36,13 @@ class WSFSDataSource {
     private fun get(name: String): DataSource {
         val credMap = mapper.readValue(getSecret("WSFS-Database"), mapTypeRef)
 
-        logger.debug { credMap }
-
         val config = HikariConfig()
         config.jdbcUrl = "jdbc:postgresql://${credMap["host"]}:${credMap["port"]}/${credMap[name]}"
         config.username = credMap["username"]
         config.password = credMap["password"]
         config.driverClassName = "org.postgresql.Driver"
         config.maximumPoolSize = POOL_SIZE // Everybody into the pool
+        logger.info("Attempting to connect to ${config.jdbcUrl}")
 
         return HikariDataSource(config)
 

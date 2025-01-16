@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <title>Static Sandbox</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          font: 16px Arial;
+        }
+
+        /*the container must be positioned relative:*/
+        .autocomplete {
+          position: relative;
+          display: inline-block;
+        }
+
+        input {
+          border: 1px solid transparent;
+          background-color: #f1f1f1;
+          padding: 10px;
+          font-size: 16px;
+        }
+
+        input[type=text] {
+          background-color: #f1f1f1;
+          width: 100%;
+        }
+
+        input[type=submit] {
+          background-color: DodgerBlue;
+          color: #fff;
+          cursor: pointer;
+        }
+
+        .autocomplete-items {
+          position: absolute;
+          border: 1px solid #d4d4d4;
+          border-bottom: none;
+          border-top: none;
+          z-index: 99;
+          /*position the autocomplete items to be the same width as the container:*/
+          top: 100%;
+          left: 0;
+          right: 0;
+        }
+
+        .autocomplete-items div {
+          padding: 10px;
+          cursor: pointer;
+          background-color: #fff;
+          border-bottom: 1px solid #d4d4d4;
+        }
+
+        /*when hovering an item:*/
+        .autocomplete-items div:hover {
+          background-color: #e9e9e9;
+        }
+
+        /*when navigating through the items using the arrow keys:*/
+        .autocomplete-active {
+          background-color: DodgerBlue !important;
+          color: #ffffff;
+        }
+
+        ol {
+          border: 2px solid black;
+          padding-right: 10px;
+          padding-left: -10px;
+          border-radius: 5px;
+        }
+    </style>
+</head>
+
+<script src="/js/autocomplete.js"></script>
+<script src="/js/Sortable.js"></script>
+<script>
+    function adder(id) {
+      let lizst = document.getElementById("choices" + id)
+      let element = document.getElementById("myInput" + id)
+      let entry = element.value.trim();
+      if (entry === "") {
+        return;
+      }
+      for (let i = 0; i < lizst.childNodes.length; i++) {
+        if (entry.toLowerCase() === lizst.childNodes[i].innerHTML.toLowerCase()) {
+          return;
+        }
+      }
+      let li = document.createElement("li");
+      li.appendChild(document.createTextNode(entry));
+      lizst.appendChild(li);
+      element.value = "";
+    }
+</script>
+
+<body>
+<h1>{{this.name}}</h1>
+<!--Make sure the form has the autocomplete function switched off:-->
+<form autocomplete="off" action="/action_page.php">
+    Nominate by typing a few letters of your choice.  (Write-ins permitted):<br/><br/>
+    {{#each categories}}
+    <h2>{{this.name}}</h2>
+    <div class="autocomplete" style="width:600px">
+      <label for="myInput{{this.catId}}">{{this.description}}</label>
+      <input id="myInput{{this.catId}}" type="text" name="nominate{{this.catId}}"  placeholder="Candidate">
+    </div>
+    <button onclick="adder({{this.catId}})" type="button">Add</button>
+    <br/>
+    <br/>
+    Your Selections.  Drag to reorder or remove.
+    <ol id="choices{{this.catId}}"></ol>
+  {{/each}}
+  <input type="submit">
+</form>
+
+<script>
+  {{#each categories}}
+    var cands{{this.catId}} = [{{#each this.candidates}}"{{this.description}}",{{/each}}];
+    alert(cands{{this.catId}});
+    autocomplete(document.getElementById("myInput{{this.catId}}"), cands{{this.catId}});
+    let opts{{this.catId}} = {
+      group: 'shared',
+      animation: 100,
+      removeOnSpill: true
+    }
+    let sortable{{this.catId}} = new Sortable(document.getElementById("choices{{this.catId}}"), opts{{this.catId}});
+  {{/each}}
+</script>
+</body>
+</html>

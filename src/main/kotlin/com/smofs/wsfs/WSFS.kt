@@ -5,7 +5,7 @@ import com.smofs.wsfs.formats.JacksonXmlMessage
 import com.smofs.wsfs.formats.jacksonMessageLens
 import com.smofs.wsfs.formats.jacksonXmlMessageLens
 import com.smofs.wsfs.models.EventModel
-import com.smofs.wsfs.models.TestViewModel
+import com.smofs.wsfs.models.FinalVoteModel
 import com.smofs.wsfs.models.oopsMyBad
 import com.smofs.wsfs.postgres.WSFSDataSource
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -22,8 +22,10 @@ import org.http4k.filter.MicrometerMetrics
 import org.http4k.filter.ServerFilters
 import org.http4k.lens.Header.CONTENT_TYPE
 import org.http4k.lens.WebForm
+import org.http4k.routing.ResourceLoader.Companion.Classpath
 import org.http4k.routing.bind
 import org.http4k.routing.routes
+import org.http4k.routing.static
 import org.http4k.server.Undertow
 import org.http4k.server.asServer
 import org.http4k.template.HandlebarsTemplates
@@ -49,18 +51,17 @@ val app: HttpHandler = oopsMyBad(renderer).then(
             Response(OK).with(jacksonXmlMessageLens of JacksonXmlMessage("Barry", "Hello there!"))
         },
 
+        "/js" bind static(Classpath("js")),
+
         "/formats/json/jackson" bind GET to {
             Response(OK).with(jacksonMessageLens of JacksonMessage("Barry", "Hello there!"))
         },
 
-        "testor" bind GET to SetHtmlContentType.then {
-            Response(OK).body(renderer(TestViewModel("This is a test", WebForm())))
-        },
-
-        "random" bind GET to SetHtmlContentType.then {
+        "vote" bind GET to SetHtmlContentType.then {
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 2L }
-            Response(OK).body(renderer(electionModel!!))
+            val voteModel = FinalVoteModel(database, 2L, electionModel!!.name, WebForm())
+            Response(OK).body(renderer(voteModel))
         },
 
         "/testing/hamkrest" bind GET to { request ->
