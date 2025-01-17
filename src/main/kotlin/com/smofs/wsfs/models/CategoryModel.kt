@@ -11,7 +11,13 @@ import org.ktorm.dsl.select
 import org.ktorm.dsl.where
 
 @Suppress("unused")
-data class CategoryModel(val database: Database, val catId: Long, val name: String, val form: WebForm) : ViewModel {
+data class CategoryModel(
+    val database: Database,
+    val catId: Long,
+    val name: String,
+    val maxVotes: Int,
+    val form: WebForm
+) : ViewModel {
     val candidates = database.from(Candidates).select(Candidates.id, Candidates.description)
         .where(Candidates.categoryId eq catId)
         .map {

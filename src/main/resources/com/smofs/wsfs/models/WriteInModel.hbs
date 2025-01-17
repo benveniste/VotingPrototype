@@ -1,7 +1,8 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-US">
 <head>
-    <title>Static Sandbox</title>
+    <title>Write In Voting</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * {
@@ -78,11 +79,14 @@
 <script src="/js/autocomplete.js"></script>
 <script src="/js/Sortable.js"></script>
 <script>
-    function adder(id) {
+    function adder(id, maxVotes) {
       let lizst = document.getElementById("choices" + id)
       let element = document.getElementById("myInput" + id)
       let entry = element.value.trim();
       if (entry === "") {
+        return;
+      } else if (lizst.childNodes.length == maxVotes) {
+        alert("No more choices allowed.");
         return;
       }
       for (let i = 0; i < lizst.childNodes.length; i++) {
@@ -108,7 +112,7 @@
       <label for="myInput{{this.catId}}">{{this.description}}</label>
       <input id="myInput{{this.catId}}" type="text" name="nominate{{this.catId}}"  placeholder="Candidate">
     </div>
-    <button onclick="adder({{this.catId}})" type="button">Add</button>
+    <button onclick="adder({{this.catId}}, {{this.maxVotes}})" type="button">Add</button>
     <br/>
     <br/>
     Your Selections.  Drag to reorder or remove.
@@ -120,7 +124,6 @@
 <script>
   {{#each categories}}
     var cands{{this.catId}} = [{{#each this.candidates}}"{{this.description}}",{{/each}}];
-    alert(cands{{this.catId}});
     autocomplete(document.getElementById("myInput{{this.catId}}"), cands{{this.catId}});
     let opts{{this.catId}} = {
       group: 'shared',

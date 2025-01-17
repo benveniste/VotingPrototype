@@ -5,10 +5,12 @@ import com.smofs.wsfs.formats.JacksonXmlMessage
 import com.smofs.wsfs.formats.jacksonMessageLens
 import com.smofs.wsfs.formats.jacksonXmlMessageLens
 import com.smofs.wsfs.models.EventModel
-import com.smofs.wsfs.models.FinalVoteModel
+import com.smofs.wsfs.models.FixedChoiceModel
+import com.smofs.wsfs.models.WriteInModel
 import com.smofs.wsfs.models.oopsMyBad
 import com.smofs.wsfs.postgres.WSFSDataSource
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import mu.KotlinLogging
 import org.http4k.core.ContentType.Companion.TEXT_HTML
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
@@ -32,6 +34,7 @@ import org.http4k.template.HandlebarsTemplates
 import org.ktorm.database.Database
 
 const val PORT = 9000
+private val logger = KotlinLogging.logger {}
 
 // this is a micrometer registry used mostly for testing - substitute the correct implementation.
 val registry = SimpleMeterRegistry()
@@ -41,6 +44,7 @@ val SetHtmlContentType = Filter { next ->
 }
 val database = Database.connect(WSFSDataSource().getDataSource())
 
+@Suppress("MagicNumber")
 val app: HttpHandler = oopsMyBad(renderer).then(
     routes(
         "/ping" bind GET to {
@@ -57,10 +61,24 @@ val app: HttpHandler = oopsMyBad(renderer).then(
             Response(OK).with(jacksonMessageLens of JacksonMessage("Barry", "Hello there!"))
         },
 
+        "nominate" bind GET to SetHtmlContentType.then {
+            val eventModel = EventModel(database, 1, WebForm())
+            val electionModel = eventModel.elections.find { it.electionId == 1L }
+            val voteModel = WriteInModel(database, 1L, electionModel!!.name, WebForm())
+            Response(OK).body(renderer(voteModel))
+        },
+
         "vote" bind GET to SetHtmlContentType.then {
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 2L }
-            val voteModel = FinalVoteModel(database, 2L, electionModel!!.name, WebForm())
+            val voteModel = FixedChoiceModel(database, 2L, electionModel!!.name, WebForm())
+            Response(OK).body(renderer(voteModel))
+        },
+
+        "site" bind GET to SetHtmlContentType.then {
+            val eventModel = EventModel(database, 1, WebForm())
+            val electionModel = eventModel.elections.find { it.electionId == 3L }
+            val voteModel = WriteInModel(database, 3L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
         },
 
@@ -80,6 +98,5 @@ fun main() {
             .then(ServerFilters.MicrometerMetrics.RequestTimer(registry)).then(app)
 
     val server = printingApp.asServer(Undertow(PORT)).start()
-
-    println("Server started on " + server.port())
+    logger.info("Server started on " + server.port())
 }

@@ -52,6 +52,7 @@ CREATE TABLE public.elections (
     id bigint NOT NULL,
     event_id bigint NOT NULL,
     name character varying(40) NOT NULL,
+    max_votes integer NOT NULL DEFAULT 143,
     voting_opens date,
     voting_closes date,
     allow_writeins boolean

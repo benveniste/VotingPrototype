@@ -13,20 +13,20 @@ import org.ktorm.dsl.select
 import org.ktorm.dsl.where
 
 @Suppress("unused")
-data class ElectionModel(val database: Database, val electionId: Long, val name: String, val form: WebForm) :
+data class FixedChoiceModel(val database: Database, val electionId: Long, val name: String, val form: WebForm) :
     ViewModel {
     var categories = database
         .from(Elections)
         .innerJoin(Categories, on = Elections.id eq Categories.electionId)
         .select(Elections.maxVotes, Categories.id, Categories.category)
-            .where(Elections.id eq electionId)
-            .map { row ->
-                CategoryModel(
-                    database,
-                    row.getLong("categories_id"),
-                    row.getString("categories_category")!!,
-                    row.getInt("elections_max_votes"),
-                    form
-                )
-            }
+        .where(Elections.id eq electionId)
+        .map { row ->
+            CategoryModel(
+                database,
+                row.getLong("categories_id"),
+                row.getString("categories_category")!!,
+                row.getInt("elections_max_votes"),
+                form
+            )
+        }
 }

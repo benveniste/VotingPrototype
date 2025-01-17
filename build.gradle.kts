@@ -69,6 +69,7 @@ dependencies {
     implementation("software.amazon.awssdk:secretsmanager:2.29.1")
 
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
+    implementation("ch.qos.logback:logback-classic:1.5.16")
 
     implementation("org.bouncycastle:bcprov-jdk18on:1.79")
 
