@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en-US">
 <head>
     <title>Write In Voting</title>
@@ -99,12 +98,34 @@
       lizst.appendChild(li);
       element.value = "";
     }
+
+    function doVote() {
+      const ballot = new Map();
+      ballot.set('uuid', document.getElementById("voteUUID").value);
+
+      var data;
+      var lizst;
+      var picks;
+      {{#each categories}}
+        data = new Map();
+        picks = document.getElementById("choices{{this.catId}}")
+        lizst = [];
+        for (let scan = 0; scan < picks.childNodes.length; scan++) {
+          lizst.push(picks.childNodes[scan].innerText)
+        }
+        data.set('id', {{this.catId}});
+        data.set('votes', lizst);
+        ballot.set('{{this.name}}', Object.fromEntries(data));
+      {{/each}}
+    alert(JSON.stringify(Object.fromEntries(ballot)));
+    return false;
+  }
 </script>
 
 <body>
 <h1>{{this.name}}</h1>
 <!--Make sure the form has the autocomplete function switched off:-->
-<form autocomplete="off" action="/action_page.php">
+<form autocomplete="off" action="/action_page.php" onSubmit="return doVote()">
     Nominate by typing a few letters of your choice.  (Write-ins permitted):<br/><br/>
     {{#each categories}}
     <h2>{{this.name}}</h2>
@@ -115,9 +136,10 @@
     <button onclick="adder({{this.catId}}, {{this.maxVotes}})" type="button">Add</button>
     <br/>
     <br/>
-    Your Selections.  Drag to reorder or remove.
+    Your Selections.  Drag to reorder or remove. HEY!
     <ol id="choices{{this.catId}}"></ol>
   {{/each}}
+  <input type="hidden" id="voteUUID" name="voteUUID" value="{{this.voteUUID}}"/>
   <input type="submit">
 </form>
 

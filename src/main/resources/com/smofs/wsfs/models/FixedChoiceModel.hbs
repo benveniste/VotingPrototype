@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en-US">
 <head>
     <title>Fixed choice voting</title>
@@ -100,12 +99,34 @@
       lizst.appendChild(li);
       element.value = "";
     }
+
+    function doVote() {
+      const ballot = new Map();
+      ballot.set('uuid', document.getElementById("voteUUID").value);
+
+      var data;
+      var lizst;
+      var picks;
+      {{#each categories}}
+        data = new Map();
+        picks = document.getElementById("choices{{this.catId}}")
+        lizst = [];
+        for (let scan = 0; scan < picks.childNodes.length; scan++) {
+          lizst.push(picks.childNodes[scan].innerText)
+        }
+        data.set('id', {{this.catId}});
+        data.set('votes', lizst);
+        ballot.set('{{this.name}}', Object.fromEntries(data));
+      {{/each}}
+      alert(JSON.stringify(Object.fromEntries(ballot)));
+      return false;
+    }
 </script>
 
 <body>
 <h1>{{this.name}}</h1>
 <!--Make sure the form has the autocomplete function switched off:-->
-<form autocomplete="off" action="/action_page.php">
+<form autocomplete="off" action="/action_page.php" onsubmit="return doVote()">
     Choose an element from the dropdown:<br/><br/>
     {{#each categories}}
     <div class="autocomplete" style="width:600px">
@@ -121,15 +142,21 @@
     Your Selections.  Drag to reorder or remove.
     <ol id="choices{{this.catId}}"></ol>
   {{/each}}
-  <input type="submit">
+  <input type="hidden" id="voteUUID" name="voteUUID" value="{{this.voteUUID}}"/>
+  <input type="submit"/>
 </form>
 
 <script>
+  var myInput;
   {{#each categories}}
     let opts{{this.catId}} = {
       group: 'shared',
       animation: 100,
       removeOnSpill: true
+    }
+    myInput = document.getElementById("myInput{{this.catId}}");
+    for (let i = 0; i < myInput.options.length; i++) {
+      myInput.options[i].selected = myInput.options[i].text.startsWith("(No");
     }
     let sortable{{this.catId}} = new Sortable(document.getElementById("choices{{this.catId}}"), opts{{this.catId}});
   {{/each}}

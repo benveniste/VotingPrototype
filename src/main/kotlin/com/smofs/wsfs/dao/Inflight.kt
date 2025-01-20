@@ -10,6 +10,7 @@ object Inflight: Table<Partial>("inflight") {
     val memberId = long("member_id").bindTo { it.memberId }
     val electionId = long("election_id").bindTo { it.electionId }
     val ballot = varchar("ballot").bindTo { it.ballot }
+    val voteUUID = varchar("vote_uuid").bindTo { it.voteUUID }
 }
 
 interface Partial : Entity<Partial> {
@@ -17,4 +18,5 @@ interface Partial : Entity<Partial> {
     val memberId: Long
     val electionId: Long
     val ballot: String
+    val voteUUID: String
 }

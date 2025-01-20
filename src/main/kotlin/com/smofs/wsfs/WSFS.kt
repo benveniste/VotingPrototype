@@ -64,21 +64,21 @@ val app: HttpHandler = oopsMyBad(renderer).then(
         "nominate" bind GET to SetHtmlContentType.then {
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 1L }
-            val voteModel = WriteInModel(database, 1L, electionModel!!.name, WebForm())
+            val voteModel = WriteInModel(4L, database, 1L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
         },
 
         "vote" bind GET to SetHtmlContentType.then {
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 2L }
-            val voteModel = FixedChoiceModel(database, 2L, electionModel!!.name, WebForm())
+            val voteModel = FixedChoiceModel(4L, database, 2L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
         },
 
         "site" bind GET to SetHtmlContentType.then {
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 3L }
-            val voteModel = WriteInModel(database, 3L, electionModel!!.name, WebForm())
+            val voteModel = WriteInModel(4L, database, 3L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
         },
 
