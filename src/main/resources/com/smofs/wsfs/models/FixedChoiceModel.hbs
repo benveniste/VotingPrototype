@@ -77,29 +77,9 @@
 
 <script src="/js/autocomplete.js"></script>
 <script src="/js/Sortable.js"></script>
+<script src="/js/voting.js"></script>
 <script>
-    function adder(id, maxVotes) {
-      let lizst = document.getElementById("choices" + id)
-      let element = document.getElementById("myInput" + id)
-      let entry = element.value.trim();
-      if (entry === "") {
-        return;
-      } else if (lizst.childNodes.length == maxVotes) {
-        alert("No more choices allowed.");
-        return;
-      }
-
-      for (let i = 0; i < lizst.childNodes.length; i++) {
-        if (entry.toLowerCase() === lizst.childNodes[i].innerHTML.toLowerCase()) {
-          return;
-        }
-      }
-      let li = document.createElement("li");
-      li.appendChild(document.createTextNode(entry));
-      lizst.appendChild(li);
-      element.value = "";
-    }
-
+    var result = false;
     function doVote() {
       const ballot = new Map();
       ballot.set('uuid', document.getElementById("voteUUID").value);
@@ -107,7 +87,7 @@
       var data;
       var lizst;
       var picks;
-      {{#each categories}}
+    {{#each categories}}
         data = new Map();
         picks = document.getElementById("choices{{this.catId}}")
         lizst = [];
@@ -117,16 +97,24 @@
         data.set('id', {{this.catId}});
         data.set('votes', lizst);
         ballot.set('{{this.name}}', Object.fromEntries(data));
-      {{/each}}
-      alert(JSON.stringify(Object.fromEntries(ballot)));
-      return false;
-    }
+    {{/each}}
+
+    submit(ballot).then((text) => {
+      if (text === "OK") {
+        result = true;
+      } else {
+        alert(text);
+      }
+      result = true;
+    });
+    return result;
+  }
 </script>
 
 <body>
 <h1>{{this.name}}</h1>
 <!--Make sure the form has the autocomplete function switched off:-->
-<form autocomplete="off" action="/action_page.php" onsubmit="return doVote()">
+<form autocomplete="off" action="/html/allDone.html" onsubmit="return doVote()">
     Choose an element from the dropdown:<br/><br/>
     {{#each categories}}
     <div class="autocomplete" style="width:600px">
@@ -142,7 +130,7 @@
     Your Selections.  Drag to reorder or remove.
     <ol id="choices{{this.catId}}"></ol>
   {{/each}}
-  <input type="hidden" id="voteUUID" name="voteUUID" value="{{this.voteUUID}}"/>
+  <input type="hidden" id="voteUUID" value="{{this.voteUUID}}"/>
   <input type="submit"/>
 </form>
 

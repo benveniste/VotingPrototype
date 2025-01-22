@@ -9,12 +9,14 @@ import com.smofs.wsfs.models.FixedChoiceModel
 import com.smofs.wsfs.models.WriteInModel
 import com.smofs.wsfs.models.oopsMyBad
 import com.smofs.wsfs.postgres.WSFSDataSource
+import com.smofs.wsfs.voting.RecordBallot
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import mu.KotlinLogging
 import org.http4k.core.ContentType.Companion.TEXT_HTML
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
+import org.http4k.core.Method.POST
 import org.http4k.core.Response
 import org.http4k.core.Status.Companion.OK
 import org.http4k.core.then
@@ -55,31 +57,38 @@ val app: HttpHandler = oopsMyBad(renderer).then(
             Response(OK).with(jacksonXmlMessageLens of JacksonXmlMessage("Barry", "Hello there!"))
         },
 
+        "/html" bind static(Classpath("html")),
+
         "/js" bind static(Classpath("js")),
 
         "/formats/json/jackson" bind GET to {
             Response(OK).with(jacksonMessageLens of JacksonMessage("Barry", "Hello there!"))
         },
 
-        "nominate" bind GET to SetHtmlContentType.then {
+        "/nominate" bind GET to SetHtmlContentType.then {
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 1L }
             val voteModel = WriteInModel(4L, database, 1L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
         },
 
-        "vote" bind GET to SetHtmlContentType.then {
+        "/vote" bind GET to SetHtmlContentType.then {
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 2L }
             val voteModel = FixedChoiceModel(4L, database, 2L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
         },
 
-        "site" bind GET to SetHtmlContentType.then {
+        "/site" bind GET to SetHtmlContentType.then {
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 3L }
             val voteModel = WriteInModel(4L, database, 3L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
+        },
+
+        "/submitBallot" bind POST to { request ->
+            val alertText = RecordBallot().fromJson(request.bodyString())
+            Response(OK).body(alertText)
         },
 
         "/testing/hamkrest" bind GET to { request ->
