@@ -20,14 +20,19 @@
       element.value = "";
     }
 
-    async function submit(ballot) {
-      let response = await fetch("submitBallot", {
-        method: "POST",
+    async function submit(ballot, okayUrl) {
+      const settings = {
+        method: 'POST',
         body: JSON.stringify(Object.fromEntries(ballot)),
         headers: {
-          "Content-type": "application/json; charset=UTF-8"
+          'Content-Type': 'application/json',
         }
-      });
-      let result = await response.text();
-      return result;
+      }
+      const response = await fetch("submitBallot", settings);
+      const text = await response.text();
+      if (text === 'OK') {
+        window.location.href = okayUrl;
+      } else {
+        alert(text);
+      }
     }

@@ -87,7 +87,7 @@ val app: HttpHandler = oopsMyBad(renderer).then(
         },
 
         "/submitBallot" bind POST to { request ->
-            val alertText = RecordBallot().fromJson(request.bodyString())
+            val alertText = RecordBallot(database).fromJson(request.bodyString())
             Response(OK).body(alertText)
         },
 

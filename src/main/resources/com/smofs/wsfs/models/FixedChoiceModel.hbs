@@ -79,14 +79,15 @@
 <script src="/js/Sortable.js"></script>
 <script src="/js/voting.js"></script>
 <script>
-    var result = false;
-    function doVote() {
-      const ballot = new Map();
-      ballot.set('uuid', document.getElementById("voteUUID").value);
+  function doVote() {
+    const ballot = new Map();
 
-      var data;
-      var lizst;
-      var picks;
+    var cats = [];
+    var data;
+    var lizst;
+    var picks;
+    var result = false;
+
     {{#each categories}}
         data = new Map();
         picks = document.getElementById("choices{{this.catId}}")
@@ -94,34 +95,29 @@
         for (let scan = 0; scan < picks.childNodes.length; scan++) {
           lizst.push(picks.childNodes[scan].innerText)
         }
+        data.set('name', '{{this.name}}');
         data.set('id', {{this.catId}});
         data.set('votes', lizst);
-        ballot.set('{{this.name}}', Object.fromEntries(data));
+        cats.push(Object.fromEntries(data));
     {{/each}}
-
-    submit(ballot).then((text) => {
-      if (text === "OK") {
-        result = true;
-      } else {
-        alert(text);
-      }
-      result = true;
-    });
-    return result;
+    ballot.set('uuid', document.getElementById("voteUUID").value);
+    ballot.set('categories', cats);
+    submit(ballot, "html/allDone.html");
+    return false;
   }
 </script>
 
 <body>
 <h1>{{this.name}}</h1>
 <!--Make sure the form has the autocomplete function switched off:-->
-<form autocomplete="off" action="/html/allDone.html" onsubmit="return doVote()">
+<form autocomplete="off" onsubmit="return doVote()">
     Choose an element from the dropdown:<br/><br/>
     {{#each categories}}
     <div class="autocomplete" style="width:600px">
       <h2><label for="myInput{{this.catId}}">{{this.name}}</label></h2>
       <select id="myInput{{this.catId}}" onchange="adder({{this.catId}}, {{this.maxVotes}})">
         {{#each this.candidates}}
-          <option value="{{this.description}}">{{this.description}}</option>
+          <option value="{{this.description}}" selected="false">{{this.description}}</option>
         {{/each}}
       </select>
     </div>
