@@ -7,8 +7,10 @@ import com.smofs.wsfs.dao.Categories
 import com.smofs.wsfs.dao.Elections
 import com.smofs.wsfs.dao.Eligibilities
 import com.smofs.wsfs.dao.Inflight
+import com.smofs.wsfs.dao.Votes
 import org.ktorm.database.Database
 import org.ktorm.dsl.and
+import org.ktorm.dsl.batchInsert
 import org.ktorm.dsl.eq
 import org.ktorm.dsl.from
 import org.ktorm.dsl.innerJoin
@@ -16,6 +18,7 @@ import org.ktorm.dsl.leftJoin
 import org.ktorm.dsl.map
 import org.ktorm.dsl.mapNotNull
 import org.ktorm.dsl.select
+import org.ktorm.dsl.update
 import org.ktorm.dsl.where
 import java.time.OffsetDateTime
 
@@ -42,9 +45,13 @@ class RecordBallot(val database: Database) {
     companion object {
         private val mapper = jacksonObjectMapper()
         private val mapTypeRef: TypeReference<Inbound> = object : TypeReference<Inbound>() {}
+
+        private val zapSQL = """
+            DELETE FROM votes v USING categories c WHERE c.election_id = ? AND v.category_id = c.id AND v.member_id = ?
+        """.trimIndent()
     }
 
-    fun validateUUID(ballotUUID: String) =
+    private fun validateUUID(ballotUUID: String) =
         database.from(Inflight)
             .innerJoin(Eligibilities,
                 on = (Eligibilities.memberId eq Inflight.memberId) and (Eligibilities.electionId eq Inflight.electionId)
@@ -57,7 +64,7 @@ class RecordBallot(val database: Database) {
             }
             .firstOrNull()
 
-    fun validateCategoriesAndVotes(whoWhat: WhoWhat, categories: Array<InboundCat>): List<InboundVote> {
+    private fun validateCategoriesAndVotes(whoWhat: WhoWhat, categories: Array<InboundCat>): List<InboundVote> {
         val allowWriteIns = database.from(Elections)
             .select(Elections.allowWriteIns)
             .where(Elections.id eq whoWhat.electionId)
@@ -92,6 +99,41 @@ class RecordBallot(val database: Database) {
             }
     }
 
+    private fun writeToDatabase(json: String, votes: List<InboundVote>, whoWhat: WhoWhat) {
+        database.useTransaction {
+            database.useConnection { conn ->
+                val stmt = conn.prepareStatement(zapSQL)
+                stmt.setLong(1, whoWhat.electionId)
+                stmt.setLong(2, whoWhat.memberId)
+                stmt.executeUpdate()
+            }
+            database.batchInsert(Votes) {
+                votes.forEach {vote ->
+                    item {
+                        set(it.categoryId, vote.categoryId)
+                        set(it.memberId, whoWhat.memberId)
+                        set(it.ordinal, vote.ordinal)
+                        set(it.castAt, vote.castAt.toInstant())
+                        set(it.candidateId, vote.candidateId)
+                        set(it.description, vote.description)
+                    }
+                }
+            }
+            database.update(Inflight) {
+                set(it.ballot, json)
+                where {
+                    (it.memberId eq whoWhat.memberId) and (it.electionId eq whoWhat.electionId)
+                }
+            }
+            database.update(Eligibilities) {
+                set(it.status, "VOTED")
+                where {
+                    (it.memberId eq whoWhat.memberId) and (it.electionId eq whoWhat.electionId)
+                }
+            }
+        }
+    }
+
     fun fromJson(json: String): String {
         val meow: Inbound = mapper.readValue(json, mapTypeRef)
         val whoWhat = validateUUID(meow.uuid)
@@ -99,6 +141,7 @@ class RecordBallot(val database: Database) {
             return ("You are not eligible to vote in this election.")
         }
         val inboundVotes = validateCategoriesAndVotes(whoWhat, meow.categories)
+        writeToDatabase(json, inboundVotes, whoWhat)
         return "OK"
     }
 }

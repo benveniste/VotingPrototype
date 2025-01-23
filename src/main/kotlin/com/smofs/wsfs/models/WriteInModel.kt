@@ -36,7 +36,7 @@ data class WriteInModel(
         database.insert(Inflight) {
             set(it.electionId, electionId)
             set(it.memberId, memberId)
-            set(it.ballot, "<Ballot></Ballot>")
+            set(it.ballot, "{}")
             set(it.voteUUID, gnu)
         }
         gnu
