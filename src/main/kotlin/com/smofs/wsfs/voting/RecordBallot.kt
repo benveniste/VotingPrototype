@@ -1,13 +1,20 @@
 package com.smofs.wsfs.voting
 
 import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.smofs.wsfs.dao.Candidates
 import com.smofs.wsfs.dao.Categories
 import com.smofs.wsfs.dao.Elections
 import com.smofs.wsfs.dao.Eligibilities
+import com.smofs.wsfs.dao.Events
 import com.smofs.wsfs.dao.Inflight
+import com.smofs.wsfs.dao.Members
 import com.smofs.wsfs.dao.Votes
+import com.smofs.wsfs.formats.XmlBallot
+import com.smofs.wsfs.formats.XmlCategory
 import org.ktorm.database.Database
 import org.ktorm.dsl.and
 import org.ktorm.dsl.batchInsert
@@ -21,6 +28,9 @@ import org.ktorm.dsl.select
 import org.ktorm.dsl.update
 import org.ktorm.dsl.where
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+
+data class Inbound(val uuid: String, val categories: Array<InboundCat>)
 
 data class InboundCat(
     val name: String,
@@ -28,9 +38,13 @@ data class InboundCat(
     val votes: List<String>
 )
 
-data class Inbound(val uuid: String, val categories: Array<InboundCat>)
-
-data class WhoWhat(val electionId: Long, val memberId: Long)
+data class WhoWhat(
+    val event: String,
+    val election: String,
+    val electionId: Long,
+    val memberId: Long,
+    val memberUuid: String
+)
 
 data class InboundVote(
     val categoryId: Long,
@@ -49,6 +63,10 @@ class RecordBallot(val database: Database) {
         private val zapSQL = """
             DELETE FROM votes v USING categories c WHERE c.election_id = ? AND v.category_id = c.id AND v.member_id = ?
         """.trimIndent()
+
+        private val xmlMapper = XmlMapper.builder().defaultUseWrapper(false).build()
+                .registerKotlinModule()
+                .enable(SerializationFeature.INDENT_OUTPUT)
     }
 
     private fun validateUUID(ballotUUID: String) =
@@ -57,10 +75,18 @@ class RecordBallot(val database: Database) {
                 on = (Eligibilities.memberId eq Inflight.memberId) and (Eligibilities.electionId eq Inflight.electionId)
             )
             .innerJoin(Elections, on = (Elections.id eq Inflight.electionId))
-            .select(Eligibilities.memberId, Eligibilities.electionId, Elections.allowWriteIns)
+            .innerJoin(Events, on = (Events.id eq Elections.eventId))
+            .innerJoin(Members, on = Members.personId eq Eligibilities.memberId)
+            .select(Events.name, Elections.name, Eligibilities.electionId,  Eligibilities.memberId, Members.uuid)
             .where((Inflight.voteUUID eq ballotUUID) and (Eligibilities.status eq "ELIGIBLE"))
             .map { row ->
-                WhoWhat(row.getLong("eligibilities_election_id"), row.getLong("eligibilities_member_id"))
+                WhoWhat(
+                    row.getString("events_name")!!,
+                    row.getString("elections_name")!!,
+                    row.getLong("eligibilities_election_id"),
+                    row.getLong("eligibilities_member_id"),
+                    row.getString("members_uuid")!!
+                )
             }
             .firstOrNull()
 
@@ -134,6 +160,16 @@ class RecordBallot(val database: Database) {
         }
     }
 
+    private fun writeToXmlDocument(votes: List<InboundVote>, cats: Array<InboundCat>, whoWhat: WhoWhat): String {
+        val cList = cats.map {cat ->
+            val vList = votes.filter { it.categoryId == cat.id }.sortedBy { it.ordinal }.map { it.description }
+            XmlCategory(cat.name, vList.toTypedArray())
+        }
+        val xmlCastAt = DateTimeFormatter.ISO_DATE_TIME.format(votes.first().castAt)
+        val xmlBallot = XmlBallot(whoWhat.event, whoWhat.election, xmlCastAt, whoWhat.memberUuid, cList)
+        return xmlMapper.writeValueAsString(xmlBallot)
+    }
+
     fun fromJson(json: String): String {
         val meow: Inbound = mapper.readValue(json, mapTypeRef)
         val whoWhat = validateUUID(meow.uuid)
@@ -141,7 +177,8 @@ class RecordBallot(val database: Database) {
             return ("You are not eligible to vote in this election.")
         }
         val inboundVotes = validateCategoriesAndVotes(whoWhat, meow.categories)
-        writeToDatabase(json, inboundVotes, whoWhat)
-        return "OK"
+        val document = writeToXmlDocument(inboundVotes, meow.categories, whoWhat)
+        //writeToDatabase(json, inboundVotes, whoWhat)
+        return "NOPE"
     }
 }
