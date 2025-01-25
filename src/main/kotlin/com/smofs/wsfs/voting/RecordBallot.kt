@@ -3,6 +3,7 @@ package com.smofs.wsfs.voting
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.smofs.wsfs.dao.Candidates
@@ -64,9 +65,12 @@ class RecordBallot(val database: Database) {
             DELETE FROM votes v USING categories c WHERE c.election_id = ? AND v.category_id = c.id AND v.member_id = ?
         """.trimIndent()
 
-        private val xmlMapper = XmlMapper.builder().defaultUseWrapper(false).build()
-                .registerKotlinModule()
-                .enable(SerializationFeature.INDENT_OUTPUT)
+        private val xmlMapper = XmlMapper.builder()
+            .configure( ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true )
+            .defaultUseWrapper(false)
+            .build()
+            .registerKotlinModule()
+            .enable(SerializationFeature.INDENT_OUTPUT)
     }
 
     private fun validateUUID(ballotUUID: String) =
@@ -101,24 +105,21 @@ class RecordBallot(val database: Database) {
                 var ordinal = 0
                 category.votes.flatMap { vote ->
                     database.from(Categories)
-                        .leftJoin(Candidates, on = (Categories.category eq category.name))
+                        .leftJoin(Candidates,
+                            on = (Candidates.categoryId eq category.id!!) and (Candidates.description eq vote))
                         .select(Categories.id, Candidates.id, Candidates.description)
-                        .where((Categories.electionId eq whoWhat.electionId) and (Candidates.description eq vote))
+                        .where(Categories.id eq category.id)
                         .mapNotNull { row ->
-                            val catId = row.getLong("categories_id")
-                            require(category.id == null || catId == category.id) {
-                                "Category ID mismatch"
-                            }
                             require(row.getString("candidates_description") != null || allowWriteIns) {
                                 "Ineligible Candidate"
                             }
                             InboundVote(
-                                catId,
+                                category.id,
                                 whoWhat.memberId,
                                 ++ordinal,
                                 castAt,
                                 row.getLong("candidates_id"),
-                                row.getString("candidates_description")!!
+                                vote
                             )
                         }
                 }
@@ -163,7 +164,7 @@ class RecordBallot(val database: Database) {
     private fun writeToXmlDocument(votes: List<InboundVote>, cats: Array<InboundCat>, whoWhat: WhoWhat): String {
         val cList = cats.map {cat ->
             val vList = votes.filter { it.categoryId == cat.id }.sortedBy { it.ordinal }.map { it.description }
-            XmlCategory(cat.name, vList.toTypedArray())
+            XmlCategory(cat.name, vList)
         }
         val xmlCastAt = DateTimeFormatter.ISO_DATE_TIME.format(votes.first().castAt)
         val xmlBallot = XmlBallot(whoWhat.event, whoWhat.election, xmlCastAt, whoWhat.memberUuid, cList)

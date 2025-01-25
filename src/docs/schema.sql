@@ -55,7 +55,8 @@ CREATE TABLE public.elections (
     max_votes integer NOT NULL DEFAULT 143,
     voting_opens date,
     voting_closes date,
-    allow_writeins boolean
+    allow_writeins boolean,
+    max_votes integer NOT NULL DEFAULT 143
 );
 COMMENT ON TABLE public.elections IS 'A set of voting items.';
 ALTER TABLE public.elections OWNER TO mhb;
@@ -94,7 +95,8 @@ CREATE TABLE public.inflight (
     id bigint NOT NULL,
     member_id bigint NOT NULL,
     election_id bigint NOT NULL,
-    ballot text NOT NULL
+    ballot text NOT NULL,
+    vote_uuid character varying(64) NOT NULL
 );
 
 --
