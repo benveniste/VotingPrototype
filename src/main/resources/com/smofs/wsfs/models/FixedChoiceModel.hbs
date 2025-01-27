@@ -117,7 +117,7 @@
       <h2><label for="myInput{{this.catId}}">{{this.name}}</label></h2>
       <select id="myInput{{this.catId}}" onchange="adder({{this.catId}}, {{this.maxVotes}})">
         {{#each this.candidates}}
-          <option value="{{this.description}}" selected="false">{{this.description}}</option>
+          <option value="{{this.description}}">{{this.description}}</option>
         {{/each}}
       </select>
     </div>
@@ -142,6 +142,7 @@
     for (let i = 0; i < myInput.options.length; i++) {
       myInput.options[i].selected = myInput.options[i].text.startsWith("(No");
     }
+    myInput.value = "";
     let sortable{{this.catId}} = new Sortable(document.getElementById("choices{{this.catId}}"), opts{{this.catId}});
   {{/each}}
 </script>

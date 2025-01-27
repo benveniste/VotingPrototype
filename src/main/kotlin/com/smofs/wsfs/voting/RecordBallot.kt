@@ -176,12 +176,16 @@ class RecordBallot(val database: Database) {
             val vList = votes.filter { it.categoryId == cat.id }.sortedBy { it.ordinal }.map { it.description }
             XmlCategory(cat.name, vList)
         }
-        val xmlCastAt = DateTimeFormatter.ISO_DATE_TIME.format(votes.first().castAt)
+        val voteAt = if (votes.isEmpty()) {
+            OffsetDateTime.now()
+        } else {
+            votes.first().castAt
+        }
         val xmlBallot = XmlBallot(
             whoWhat.event,
             whoWhat.eventDate.toString(),
             whoWhat.election,
-            xmlCastAt,
+            DateTimeFormatter.ISO_DATE_TIME.format(voteAt),
             whoWhat.memberUuid,
             cList
         )
