@@ -28,6 +28,7 @@ import org.ktorm.dsl.mapNotNull
 import org.ktorm.dsl.select
 import org.ktorm.dsl.update
 import org.ktorm.dsl.where
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
@@ -41,6 +42,7 @@ data class InboundCat(
 
 data class WhoWhat(
     val event: String,
+    val eventDate: LocalDate,
     val election: String,
     val electionId: Long,
     val memberId: Long,
@@ -81,11 +83,19 @@ class RecordBallot(val database: Database) {
             .innerJoin(Elections, on = (Elections.id eq Inflight.electionId))
             .innerJoin(Events, on = (Events.id eq Elections.eventId))
             .innerJoin(Members, on = Members.personId eq Eligibilities.memberId)
-            .select(Events.name, Elections.name, Eligibilities.electionId,  Eligibilities.memberId, Members.uuid)
+            .select(
+                Events.name,
+                Events.startDate,
+                Elections.name,
+                Eligibilities.electionId,
+                Eligibilities.memberId,
+                Members.uuid
+            )
             .where((Inflight.voteUUID eq ballotUUID) and (Eligibilities.status eq "ELIGIBLE"))
             .map { row ->
                 WhoWhat(
                     row.getString("events_name")!!,
+                    row.getLocalDate("events_start_date")!!,
                     row.getString("elections_name")!!,
                     row.getLong("eligibilities_election_id"),
                     row.getLong("eligibilities_member_id"),
@@ -167,7 +177,14 @@ class RecordBallot(val database: Database) {
             XmlCategory(cat.name, vList)
         }
         val xmlCastAt = DateTimeFormatter.ISO_DATE_TIME.format(votes.first().castAt)
-        val xmlBallot = XmlBallot(whoWhat.event, whoWhat.election, xmlCastAt, whoWhat.memberUuid, cList)
+        val xmlBallot = XmlBallot(
+            whoWhat.event,
+            whoWhat.eventDate.toString(),
+            whoWhat.election,
+            xmlCastAt,
+            whoWhat.memberUuid,
+            cList
+        )
         return xmlMapper.writeValueAsString(xmlBallot)
     }
 

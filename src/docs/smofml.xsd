@@ -4,6 +4,7 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element type="xs:string" name="event"/>
+                <xs:element type="xs:date" name="event_date"/>
                 <xs:element type="xs:string" name="election"/>
                 <xs:element type="xs:dateTime" name="castAt"/>
                 <xs:element type="xs:string" name="memberUUID"/>

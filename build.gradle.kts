@@ -66,16 +66,17 @@ dependencies {
     implementation("org.http4k:http4k-server-undertow")
     implementation("org.http4k:http4k-template-handlebars")
 
-    implementation("software.amazon.awssdk:secretsmanager:2.29.1")
-
-    implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
     implementation("ch.qos.logback:logback-classic:1.5.16")
 
-    implementation("org.bouncycastle:bcprov-jdk18on:1.79")
-
-    implementation("org.postgresql:postgresql:42.7.4")
     implementation("com.zaxxer:HikariCP:6.0.0")
+
+    implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
+
+    implementation("org.bouncycastle:bcprov-jdk18on:1.79")
+    implementation("org.postgresql:postgresql:42.7.4")
     implementation("org.ktorm:ktorm-core:3.3.0")
+
+    implementation("software.amazon.awssdk:secretsmanager:2.29.1")
 
     testImplementation("org.http4k:http4k-connect-amazon-cloudwatchlogs-fake")
     testImplementation("org.slf4j:slf4j-simple:2.0.16")
