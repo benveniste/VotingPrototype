@@ -68,12 +68,15 @@ dependencies {
 
     implementation("ch.qos.logback:logback-classic:1.5.16")
 
+    implementation("com.google.protobuf:protobuf-java:4.29.3")
     implementation("com.zaxxer:HikariCP:6.0.0")
 
+    implementation("io.grpc:grpc-netty-shaded:1.70.0")
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
 
     implementation("org.bouncycastle:bcprov-jdk18on:1.79")
     implementation("org.postgresql:postgresql:42.7.4")
+    implementation("org.hyperledger.fabric:fabric-gateway:1.7.1")
     implementation("org.ktorm:ktorm-core:3.3.0")
 
     implementation("software.amazon.awssdk:secretsmanager:2.29.1")
