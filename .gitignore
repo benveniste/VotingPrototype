@@ -15,8 +15,7 @@
 /README.md
 /.gradle/8.10.2/fileHashes/resourceHashesCache.bin
 /.gradle/8.10.2/checksums/sha1-checksums.bin
-/.idea/.gitignore
 /.gradle/8.10.2/executionHistory/executionHistory.bin
 /.gradle/8.10.2/executionHistory/executionHistory.lock
 /.gradle/file-system.probe
-/.idea/uiDesigner.xml
+/.idea/
