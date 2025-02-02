@@ -8,6 +8,7 @@
                 <xs:element type="xs:string" name="election"/>
                 <xs:element type="xs:dateTime" name="castAt"/>
                 <xs:element type="xs:string" name="memberUUID"/>
+                <xs:element type="xs:string" name="ballotUUID"/>
                 <xs:element name="category" maxOccurs="unbounded" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>

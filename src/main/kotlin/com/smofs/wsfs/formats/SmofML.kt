@@ -15,6 +15,7 @@ data class XmlBallot(
     val election: String,
     val castAt: String?,
     val memberUUID: String,
+    val ballotUUID: String,
     @JacksonXmlProperty(localName = "category")
     val category: List<XmlCategory>,
     @JacksonXmlProperty(isAttribute = true, localName = "xmlns:xs")

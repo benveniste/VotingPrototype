@@ -32,7 +32,27 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
-data class Inbound(val uuid: String, val categories: Array<InboundCat>)
+data class Inbound(val uuid: String, val categories: Array<InboundCat>) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) {
+            return true
+        }
+        if (javaClass != other?.javaClass) {
+            return false
+        }
+        other as Inbound
+        if (uuid != other.uuid) {
+            return false
+        }
+        return categories.contentEquals(other.categories)
+    }
+
+    override fun hashCode(): Int {
+        var result = uuid.hashCode()
+        result = 31 * result + categories.contentHashCode()
+        return result
+    }
+}
 
 data class InboundCat(
     val name: String,
@@ -46,7 +66,8 @@ data class WhoWhat(
     val election: String,
     val electionId: Long,
     val memberId: Long,
-    val memberUuid: String
+    val memberUuid: String,
+    val ballotUuid: String
 )
 
 data class InboundVote(
@@ -99,7 +120,8 @@ class RecordBallot(val database: Database) {
                     row.getString("elections_name")!!,
                     row.getLong("eligibilities_election_id"),
                     row.getLong("eligibilities_member_id"),
-                    row.getString("members_uuid")!!
+                    row.getString("members_uuid")!!,
+                    ballotUUID
                 )
             }
             .firstOrNull()
@@ -187,6 +209,7 @@ class RecordBallot(val database: Database) {
             whoWhat.election,
             DateTimeFormatter.ISO_DATE_TIME.format(voteAt),
             whoWhat.memberUuid,
+            whoWhat.ballotUuid,
             cList
         )
         return xmlMapper.writeValueAsString(xmlBallot)
