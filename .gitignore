@@ -1,6 +1,4 @@
-/.gradle/buildOutputCleanup/buildOutputCleanup.lock
-/.gradle/buildOutputCleanup/cache.properties
-/.gradle/8.10.2/checksums/checksums.lock
+/.gradle/*
 /build/*
 /.gradle/8.10.2/fileHashes/fileHashes.bin
 /.gradle/8.10.2/fileHashes/fileHashes.lock
