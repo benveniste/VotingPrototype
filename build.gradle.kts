@@ -17,9 +17,6 @@ buildscript {
         mavenCentral()
         gradlePluginPortal()
     }
-
-    dependencies {
-    }
 }
 
 kotlin {
@@ -34,6 +31,22 @@ repositories {
 }
 
 tasks {
+    val compileSolidity by creating(Exec::class) {
+        commandLine = listOf(
+            "/opt/homebrew/bin/solc",
+            "--bin",
+            "--abi",
+            "src/main/solidity/xmlContract.sol",
+            "-o",
+            "src/main/resources/",
+            "--overwrite"
+        )
+    }
+
+    compileKotlin {
+        dependsOn(compileSolidity)
+    }
+
     withType<KotlinJvmCompile>().configureEach {
         compilerOptions {
             allWarningsAsErrors = false
@@ -78,6 +91,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.4")
     implementation("org.hyperledger.fabric:fabric-gateway:1.7.1")
     implementation("org.ktorm:ktorm-core:3.3.0")
+    implementation("org.web3j:core:4.12.3")
 
     implementation("software.amazon.awssdk:secretsmanager:2.29.1")
 

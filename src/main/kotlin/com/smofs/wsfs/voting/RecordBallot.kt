@@ -16,6 +16,7 @@ import com.smofs.wsfs.dao.Members
 import com.smofs.wsfs.dao.Votes
 import com.smofs.wsfs.formats.XmlBallot
 import com.smofs.wsfs.formats.XmlCategory
+import mu.KotlinLogging
 import org.ktorm.database.Database
 import org.ktorm.dsl.and
 import org.ktorm.dsl.batchInsert
@@ -83,6 +84,7 @@ class RecordBallot(val database: Database) {
     companion object {
         private val mapper = jacksonObjectMapper()
         private val mapTypeRef: TypeReference<Inbound> = object : TypeReference<Inbound>() {}
+        private val logger = KotlinLogging.logger {}
 
         private val zapSQL = """
             DELETE FROM votes v USING categories c WHERE c.election_id = ? AND v.category_id = c.id AND v.member_id = ?
@@ -222,8 +224,8 @@ class RecordBallot(val database: Database) {
             return ("You are not eligible to vote in this election.")
         }
         val inboundVotes = validateCategoriesAndVotes(whoWhat, meow.categories)
-        val document = writeToXmlDocument(inboundVotes, meow.categories, whoWhat)
-        //writeToDatabase(json, inboundVotes, whoWhat)
+        writeToXmlDocument(inboundVotes, meow.categories, whoWhat)
+        writeToDatabase(json, inboundVotes, whoWhat)
         return "NOPE"
     }
 }

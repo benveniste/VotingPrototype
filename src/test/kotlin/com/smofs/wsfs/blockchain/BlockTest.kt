@@ -7,6 +7,8 @@ import org.hyperledger.fabric.client.identity.Identities
 import org.hyperledger.fabric.client.identity.Signers
 import org.hyperledger.fabric.client.identity.X509Identity
 import org.junit.jupiter.api.Test
+import org.web3j.protocol.Web3j
+import org.web3j.protocol.http.HttpService
 import software.amazon.awssdk.utils.StringInputStream
 
 
@@ -29,5 +31,13 @@ class BlockTest {
         requireNotNull(grpcConnection)
         requireNotNull(identity)
         requireNotNull(signer)
+    }
+
+    @Test
+    fun web3jTest() {
+        val web3 = Web3j.build(HttpService("http://localhost:8545"))
+        val web3ClientVersion = web3.web3ClientVersion().send()
+        val clientVersion = web3ClientVersion.web3ClientVersion
+        requireNotNull(clientVersion)
     }
 }
