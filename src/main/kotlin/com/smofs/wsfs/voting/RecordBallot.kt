@@ -31,6 +31,7 @@ import org.ktorm.dsl.mapNotNull
 import org.ktorm.dsl.select
 import org.ktorm.dsl.update
 import org.ktorm.dsl.where
+import org.web3j.crypto.Credentials
 import org.web3j.crypto.WalletUtils
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.http.HttpService
@@ -106,13 +107,14 @@ class RecordBallot(val database: Database) {
             .enable(SerializationFeature.INDENT_OUTPUT)
     }
 
-    val web3j = Web3j.build(HttpService("http://localhost:8545"))
+    val web3j: Web3j = Web3j.build(HttpService("http://localhost:8545"))
     val credMap = AwsApi.getSecretMap("WSFS-Blockchain")
     val resourceUrl = javaClass.getClassLoader().getResource("AccountKey.json")!!
-    val credentials = WalletUtils.loadCredentials(credMap["AccountPassword"], File(resourceUrl.file))
+    val credentials: Credentials = WalletUtils.loadCredentials(credMap["AccountPassword"], File(resourceUrl.file))
     val chainId = web3j.ethChainId().send().chainId.toLong()
     val mangler = RawTransactionManager(web3j, credentials, chainId)
-    val smartContract = XmlStorage.load(credMap["SmartContractAddress"], web3j, mangler, DefaultGasProvider())
+    val smartContract: XmlStorage =
+        XmlStorage.load(credMap["SmartContractAddress"], web3j, mangler, DefaultGasProvider())
 
     private fun validateUUID(ballotUUID: String) =
         database.from(Inflight)
