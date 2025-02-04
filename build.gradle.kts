@@ -43,8 +43,22 @@ tasks {
         )
     }
 
-    compileKotlin {
+    val createJavaContract by creating(Exec::class) {
+        val environment = System.getenv()
+        commandLine = listOf(
+            environment["HOME"] + "/.web3j/web3j",
+            "generate",
+            "solidity",
+            "-b", environment["HOME"] + "/dev/VotingPrototype/src/main/resources/xmlStorage.bin",
+            "-a", environment["HOME"] + "/dev/VotingPrototype/src/main/resources/xmlStorage.abi",
+            "-o", environment["HOME"] + "/dev/VotingPrototype/src/main/java/",
+            "-p", "com.smofs"
+        )
+    }
+
+    register("newContract") {
         dependsOn(compileSolidity)
+        dependsOn(createJavaContract)
     }
 
     withType<KotlinJvmCompile>().configureEach {

@@ -5,13 +5,36 @@
 pragma solidity >=0.4.16 <0.9.0;
 
 contract xmlStorage {
-    string private storedXml;
+    /* Define variable owner of the type address*/
+    address private owner;
+    string[] public ballots;
 
-    function set(string memory xml) public {
-        storedXml = xml;
+    /* this function is executed at initialization and sets the owner of the contract */
+    constructor () {
+        owner = msg.sender;
     }
 
-    function get() public view returns (string memory) {
-        return storedXml;
+    event BallotCast(string ballot);
+
+    modifier onlyOwner {
+        require(
+            msg.sender == owner,
+            "Only owner can call this function."
+        );
+        _;
+    }
+
+    function cast(string memory ballot) public {
+        ballots.push(ballot);
+        emit BallotCast(ballot);
+    }
+
+    function set(string memory initialBallot) public {
+        delete ballots;
+        cast(initialBallot);
+    }
+
+    function get() public view returns (string[] memory) {
+        return ballots;
     }
 }

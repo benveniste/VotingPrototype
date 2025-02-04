@@ -6,6 +6,7 @@ import com.smofs.XmlStorage
 import com.smofs.wsfs.aws.AwsApi
 import io.grpc.Grpc
 import io.grpc.TlsChannelCredentials
+import mu.KotlinLogging
 import org.hyperledger.fabric.client.identity.Identities
 import org.hyperledger.fabric.client.identity.Signers
 import org.hyperledger.fabric.client.identity.X509Identity
@@ -19,6 +20,8 @@ import org.web3j.tx.gas.DefaultGasProvider
 import software.amazon.awssdk.utils.StringInputStream
 import java.io.File
 
+
+private val logger = KotlinLogging.logger {}
 
 class BlockTest {
     @Test
@@ -44,20 +47,26 @@ class BlockTest {
 
     @Test
     fun web3jTest() {
+        val contractAddr = "0x90a5f9bd4d6c5d8a0f383cc21142e698f521c9c3"
         val web3j = Web3j.build(HttpService("http://localhost:8545"))
         val web3ClientVersion = web3j.web3ClientVersion().send()
         val clientVersion = web3ClientVersion.web3ClientVersion
         requireNotNull(clientVersion)
+        requireNotNull(contractAddr)
         val credMap = AwsApi.getSecretMap("WSFS-Blockchain")
 
         val resourceUrl = javaClass.getClassLoader().getResource("AccountKey.json")!!
         val credentials = WalletUtils.loadCredentials(credMap["AccountPassword"], File(resourceUrl.file))
         val chainId = web3j.ethChainId().send().chainId.toLong()
         val mangler = RawTransactionManager(web3j, credentials, chainId)
-        val smartContract = XmlStorage.deploy(web3j, mangler, DefaultGasProvider()).send()
-        val result = smartContract.set("<MHB></MHB>").send()
-        var fetch =  smartContract.get().send()
+//        val smartContract = XmlStorage.deploy(web3j, mangler, DefaultGasProvider()).send()
+        val smartContract = XmlStorage.load(contractAddr, web3j, mangler, DefaultGasProvider())
+        smartContract.set("<Initial/>").send()
+        val result = smartContract.cast("<Ballot>" + System.currentTimeMillis() + "</Ballot>").send()
+        val fetch =  smartContract.get().send()
+        logger.info { fetch }
         requireNotNull(result)
-        assertThat("Bad fetch", fetch, equalTo("<MHB></MHB>"))
+        assertThat("Bad fetch", fetch.size, equalTo(2))
+        smartContract.set("<Initial/>").send()
     }
 }

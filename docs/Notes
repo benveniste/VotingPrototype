@@ -1,4 +1,9 @@
 geth --dev --http --http.api eth,web3,net --http.corsdomain "https://remix.ethereum.org"  --datadir /Users/mhb/dev/LocalChain
 geth attach /Users/mhb/dev/LocalChain/geth.ipc
-
+web3j generate solidity -b /Users/mhb/dev/VotingPrototype/src/main/resources/xmlStorage.bin \
+                        -a /Users/mhb/dev/VotingPrototype/src/main/resources/xmlStorage.abi \
+                        -o /Users/mhb/dev/VotingPrototype/src/main/java/ \
+                        -p com.smofs
 Account:  0xdcaf71cf6c0b92c79e9d46ea1f1ab44ac9ffb21f
+
+web3j generate solidity -b /path/to/<smart-contract>.bin -a /path/to/<smart-contract>.abi -o /path/to/src/main/java -p com.your.organisation.name
