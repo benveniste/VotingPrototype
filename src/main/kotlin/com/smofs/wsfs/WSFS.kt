@@ -95,6 +95,11 @@ val app: HttpHandler = oopsMyBad(renderer).then(
             Response(OK).body("Echo '${request.bodyString()}'")
         },
 
+        "/testing/reset" bind GET to { request ->
+            RecordBallot(database).reset()
+            Response(OK).body("You Maniacs! You blew it up! Ah, damn you! God damn you all to hell!")
+        },
+
         "/metrics" bind GET to {
             Response(OK).body("Example metrics route for WSFS")
         }

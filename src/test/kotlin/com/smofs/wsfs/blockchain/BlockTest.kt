@@ -46,8 +46,10 @@ class BlockTest {
     }
 
     @Test
+    // To create a new test contract, run:
+    // val smartContract = XmlStorage.deploy(web3j, mangler, DefaultGasProvider()).send()
     fun web3jTest() {
-        val contractAddr = "0x90a5f9bd4d6c5d8a0f383cc21142e698f521c9c3"
+        val contractAddr = "0x09b92b29729ea287fcbab137acda723d25d553a3"
         val web3j = Web3j.build(HttpService("http://localhost:8545"))
         val web3ClientVersion = web3j.web3ClientVersion().send()
         val clientVersion = web3ClientVersion.web3ClientVersion
@@ -59,7 +61,6 @@ class BlockTest {
         val credentials = WalletUtils.loadCredentials(credMap["AccountPassword"], File(resourceUrl.file))
         val chainId = web3j.ethChainId().send().chainId.toLong()
         val mangler = RawTransactionManager(web3j, credentials, chainId)
-//        val smartContract = XmlStorage.deploy(web3j, mangler, DefaultGasProvider()).send()
         val smartContract = XmlStorage.load(contractAddr, web3j, mangler, DefaultGasProvider())
         smartContract.set("<Initial/>").send()
         val result = smartContract.cast("<Ballot>" + System.currentTimeMillis() + "</Ballot>").send()

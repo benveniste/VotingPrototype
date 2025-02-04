@@ -6,6 +6,8 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.smofs.XmlStorage
+import com.smofs.wsfs.aws.AwsApi
 import com.smofs.wsfs.dao.Candidates
 import com.smofs.wsfs.dao.Categories
 import com.smofs.wsfs.dao.Elections
@@ -29,6 +31,12 @@ import org.ktorm.dsl.mapNotNull
 import org.ktorm.dsl.select
 import org.ktorm.dsl.update
 import org.ktorm.dsl.where
+import org.web3j.crypto.WalletUtils
+import org.web3j.protocol.Web3j
+import org.web3j.protocol.http.HttpService
+import org.web3j.tx.RawTransactionManager
+import org.web3j.tx.gas.DefaultGasProvider
+import java.io.File
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -98,6 +106,14 @@ class RecordBallot(val database: Database) {
             .enable(SerializationFeature.INDENT_OUTPUT)
     }
 
+    val web3j = Web3j.build(HttpService("http://localhost:8545"))
+    val credMap = AwsApi.getSecretMap("WSFS-Blockchain")
+    val resourceUrl = javaClass.getClassLoader().getResource("AccountKey.json")!!
+    val credentials = WalletUtils.loadCredentials(credMap["AccountPassword"], File(resourceUrl.file))
+    val chainId = web3j.ethChainId().send().chainId.toLong()
+    val mangler = RawTransactionManager(web3j, credentials, chainId)
+    val smartContract = XmlStorage.load(credMap["SmartContractAddress"], web3j, mangler, DefaultGasProvider())
+
     private fun validateUUID(ballotUUID: String) =
         database.from(Inflight)
             .innerJoin(Eligibilities,
@@ -161,13 +177,13 @@ class RecordBallot(val database: Database) {
     }
 
     private fun writeToDatabase(json: String, votes: List<InboundVote>, whoWhat: WhoWhat) {
+        database.useConnection { conn ->
+            val stmt = conn.prepareStatement(zapSQL)
+            stmt.setLong(1, whoWhat.electionId)
+            stmt.setLong(2, whoWhat.memberId)
+            stmt.executeUpdate()
+        }
         database.useTransaction {
-            database.useConnection { conn ->
-                val stmt = conn.prepareStatement(zapSQL)
-                stmt.setLong(1, whoWhat.electionId)
-                stmt.setLong(2, whoWhat.memberId)
-                stmt.executeUpdate()
-            }
             database.batchInsert(Votes) {
                 votes.forEach {vote ->
                     item {
@@ -217,6 +233,21 @@ class RecordBallot(val database: Database) {
         return xmlMapper.writeValueAsString(xmlBallot)
     }
 
+    private fun writeToBlockChain(smofMLString: String) {
+        smartContract.cast(smofMLString).send()
+        val oops = smartContract.get().send()
+        logger.info {
+            oops.joinToString("\n\n")
+        }
+    }
+
+    fun reset() {
+        smartContract.set("<Reset>${System.currentTimeMillis()}</Reset>").send()
+        database.update(Eligibilities) {
+            set(Eligibilities.status, "ELIGIBLE")
+        }
+    }
+
     fun fromJson(json: String): String {
         val meow: Inbound = mapper.readValue(json, mapTypeRef)
         val whoWhat = validateUUID(meow.uuid)
@@ -224,8 +255,9 @@ class RecordBallot(val database: Database) {
             return ("You are not eligible to vote in this election.")
         }
         val inboundVotes = validateCategoriesAndVotes(whoWhat, meow.categories)
-        writeToXmlDocument(inboundVotes, meow.categories, whoWhat)
+        val smofMLString = writeToXmlDocument(inboundVotes, meow.categories, whoWhat)
+        writeToBlockChain(smofMLString)
         writeToDatabase(json, inboundVotes, whoWhat)
-        return "NOPE"
+        return "OK"
     }
 }
