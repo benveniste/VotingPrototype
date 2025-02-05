@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <title>In this ballot box . . .</title>
+</head>
+<body>
+{{#each ballots}}
+    <em>Contract {{this.first}}</em>
+    <pre>{{this.second}}</pre>
+    <hr/>
+{{/each}}
+<pre>{{ballot}}</pre>
+</body>

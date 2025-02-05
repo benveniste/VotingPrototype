@@ -26,7 +26,7 @@ data class FixedChoiceModel(
     val name: String,
     val form: WebForm
 ) : ViewModel {
-    var voteUUID = database.from(Inflight)
+    val voteUUID = database.from(Inflight)
         .select(Inflight.voteUUID)
         .where((Inflight.electionId eq electionId) and (Inflight.memberId eq memberId))
         .map { row -> row.getString("inflight_vote_uuid") }
@@ -40,7 +40,7 @@ data class FixedChoiceModel(
             }
             gnu
         }
-    var categories = database.from(Elections)
+    val categories = database.from(Elections)
         .innerJoin(Categories, on = Elections.id eq Categories.electionId)
         .select(Elections.maxVotes, Categories.id, Categories.category)
         .where(Elections.id eq electionId)

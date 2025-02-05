@@ -245,7 +245,7 @@ class RecordBallot(val database: Database) {
                 set(Elections.contractAddress, newContract.contractAddress)
                 where { Elections.id eq whoWhat.electionId }
             }
-            logger.warn { "Created new ballot box for election ${whoWhat.electionId}: ${whoWhat.electionContract}"}
+            logger.warn { "Created new ballot box for election ${whoWhat.electionId}: ${newContract.contractAddress}"}
             newContract
         } else {
             BallotBox.load(whoWhat.electionContract, web3j, mangler, DefaultGasProvider())
@@ -285,6 +285,6 @@ class RecordBallot(val database: Database) {
         val smofMLString = writeToXmlDocument(inboundVotes, meow.categories, whoWhat)
         val ballotContract = writeToBlockChain(smofMLString, whoWhat)
         writeToDatabase(json, inboundVotes, whoWhat)
-        return "OK|" + ballotContract
+        return "OK|$ballotContract"
     }
 }

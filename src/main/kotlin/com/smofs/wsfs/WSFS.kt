@@ -6,6 +6,7 @@ import com.smofs.wsfs.formats.jacksonMessageLens
 import com.smofs.wsfs.formats.jacksonXmlMessageLens
 import com.smofs.wsfs.models.EventModel
 import com.smofs.wsfs.models.FixedChoiceModel
+import com.smofs.wsfs.models.ViewBallotBoxModel
 import com.smofs.wsfs.models.ViewBallotModel
 import com.smofs.wsfs.models.VotedModel
 import com.smofs.wsfs.models.WriteInModel
@@ -68,23 +69,26 @@ val app: HttpHandler = oopsMyBad(renderer).then(
         },
 
         "/nominate" bind GET to SetHtmlContentType.then {
+            val who = (it.queries("id").getOrElse(0) { "4" })!!.toLong()
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 1L }
-            val voteModel = WriteInModel(4L, database, 1L, electionModel!!.name, WebForm())
+            val voteModel = WriteInModel(who, database, 1L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
         },
 
         "/vote" bind GET to SetHtmlContentType.then {
+            val who = (it.queries("id").getOrElse(0) { "4" })!!.toLong()
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 2L }
-            val voteModel = FixedChoiceModel(4L, database, 2L, electionModel!!.name, WebForm())
+            val voteModel = FixedChoiceModel(who, database, 2L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
         },
 
         "/site" bind GET to SetHtmlContentType.then {
+            val who = (it.queries("id").getOrElse(0) { "4" })!!.toLong()
             val eventModel = EventModel(database, 1, WebForm())
             val electionModel = eventModel.elections.find { it.electionId == 3L }
-            val voteModel = WriteInModel(4L, database, 3L, electionModel!!.name, WebForm())
+            val voteModel = WriteInModel(who, database, 3L, electionModel!!.name, WebForm())
             Response(OK).body(renderer(voteModel))
         },
 
@@ -103,6 +107,12 @@ val app: HttpHandler = oopsMyBad(renderer).then(
             val id = it.queries("ballotContract").getOrElse(0) { "missing" }!!
             val viewBallotModel = ViewBallotModel(id, WebForm())
             Response(OK).body(renderer(viewBallotModel))
+        },
+
+        "/ballotBox" bind GET to SetHtmlContentType.then {
+            val id = it.queries("contract").getOrElse(0) { "missing" }!!
+            val viewBallotBoxModel = ViewBallotBoxModel(id, WebForm())
+            Response(OK).body(renderer(viewBallotBoxModel))
         },
 
         "/testing/hamkrest" bind GET to { request ->
