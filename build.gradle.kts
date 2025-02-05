@@ -31,34 +31,61 @@ repositories {
 }
 
 tasks {
-    val compileSolidity by creating(Exec::class) {
+    val compileBallotBox by creating(Exec::class) {
         commandLine = listOf(
             "/opt/homebrew/bin/solc",
             "--bin",
             "--abi",
-            "src/main/solidity/xmlContract.sol",
+            "src/main/solidity/ballotBox.sol",
             "-o",
             "src/main/resources/",
             "--overwrite"
         )
     }
 
-    val createJavaContract by creating(Exec::class) {
+    val compileBallot by creating(Exec::class) {
+        commandLine = listOf(
+            "/opt/homebrew/bin/solc",
+            "--bin",
+            "--abi",
+            "src/main/solidity/ballot.sol",
+            "-o",
+            "src/main/resources/",
+            "--overwrite"
+        )
+    }
+
+    val createBallotBoxContract by creating(Exec::class) {
         val environment = System.getenv()
         commandLine = listOf(
             environment["HOME"] + "/.web3j/web3j",
             "generate",
             "solidity",
-            "-b", environment["HOME"] + "/dev/VotingPrototype/src/main/resources/xmlStorage.bin",
-            "-a", environment["HOME"] + "/dev/VotingPrototype/src/main/resources/xmlStorage.abi",
+            "-b", environment["HOME"] + "/dev/VotingPrototype/src/main/resources/ballotBox.bin",
+            "-a", environment["HOME"] + "/dev/VotingPrototype/src/main/resources/ballotBox.abi",
+            "-o", environment["HOME"] + "/dev/VotingPrototype/src/main/java/",
+            "-p", "com.smofs"
+        )
+    }
+
+    val createBallotContract by creating(Exec::class) {
+        val environment = System.getenv()
+        commandLine = listOf(
+            environment["HOME"] + "/.web3j/web3j",
+            "generate",
+            "solidity",
+            "-b", environment["HOME"] + "/dev/VotingPrototype/src/main/resources/ballot.bin",
+            "-a", environment["HOME"] + "/dev/VotingPrototype/src/main/resources/ballot.abi",
             "-o", environment["HOME"] + "/dev/VotingPrototype/src/main/java/",
             "-p", "com.smofs"
         )
     }
 
     register("newContract") {
-        dependsOn(compileSolidity)
-        dependsOn(createJavaContract)
+        dependsOn(compileBallotBox)
+        dependsOn(compileBallot)
+        dependsOn(createBallotBoxContract)
+        dependsOn(createBallotContract)
     }
 
     withType<KotlinJvmCompile>().configureEach {

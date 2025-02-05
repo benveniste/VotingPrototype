@@ -4,7 +4,7 @@
 
 pragma solidity >=0.4.16 <0.9.0;
 
-contract xmlStorage {
+contract ballotBox {
     /* Define variable owner of the type address*/
     address private owner;
     string[] public ballots;

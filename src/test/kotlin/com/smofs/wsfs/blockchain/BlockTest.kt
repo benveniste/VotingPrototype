@@ -2,7 +2,7 @@ package com.smofs.wsfs.blockchain
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import com.smofs.XmlStorage
+import com.smofs.BallotBox
 import com.smofs.wsfs.aws.AwsApi
 import io.grpc.Grpc
 import io.grpc.TlsChannelCredentials
@@ -19,7 +19,6 @@ import org.web3j.tx.RawTransactionManager
 import org.web3j.tx.gas.DefaultGasProvider
 import software.amazon.awssdk.utils.StringInputStream
 import java.io.File
-
 
 private val logger = KotlinLogging.logger {}
 
@@ -47,7 +46,7 @@ class BlockTest {
 
     @Test
     // To create a new test contract, run:
-    // val smartContract = XmlStorage.deploy(web3j, mangler, DefaultGasProvider()).send()
+    // val smartContract = BallotBox.deploy(web3j, mangler, DefaultGasProvider()).send()
     fun web3jTest() {
         val contractAddr = "0x09b92b29729ea287fcbab137acda723d25d553a3"
         val web3j = Web3j.build(HttpService("http://localhost:8545"))
@@ -61,13 +60,13 @@ class BlockTest {
         val credentials = WalletUtils.loadCredentials(credMap["AccountPassword"], File(resourceUrl.file))
         val chainId = web3j.ethChainId().send().chainId.toLong()
         val mangler = RawTransactionManager(web3j, credentials, chainId)
-        val smartContract = XmlStorage.load(contractAddr, web3j, mangler, DefaultGasProvider())
-        smartContract.set("<Initial/>").send()
-        val result = smartContract.cast("<Ballot>" + System.currentTimeMillis() + "</Ballot>").send()
+        val smartContract = BallotBox.load(contractAddr, web3j, mangler, DefaultGasProvider())
+        smartContract.set("").send()
+        val result = smartContract.cast(contractAddr).send()
         val fetch =  smartContract.get().send()
         logger.info { fetch }
         requireNotNull(result)
         assertThat("Bad fetch", fetch.size, equalTo(2))
-        smartContract.set("<Initial/>").send()
+        smartContract.set("").send()
     }
 }

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.smofs.XmlStorage
+import com.smofs.BallotBox
 import com.smofs.wsfs.aws.AwsApi
 import com.smofs.wsfs.dao.Candidates
 import com.smofs.wsfs.dao.Categories
@@ -23,8 +23,10 @@ import org.ktorm.database.Database
 import org.ktorm.dsl.and
 import org.ktorm.dsl.batchInsert
 import org.ktorm.dsl.eq
+import org.ktorm.dsl.forEach
 import org.ktorm.dsl.from
 import org.ktorm.dsl.innerJoin
+import org.ktorm.dsl.isNotNull
 import org.ktorm.dsl.leftJoin
 import org.ktorm.dsl.map
 import org.ktorm.dsl.mapNotNull
@@ -75,6 +77,7 @@ data class WhoWhat(
     val eventDate: LocalDate,
     val election: String,
     val electionId: Long,
+    val electionContract: String?,
     val memberId: Long,
     val memberUuid: String,
     val ballotUuid: String
@@ -113,8 +116,6 @@ class RecordBallot(val database: Database) {
     val credentials: Credentials = WalletUtils.loadCredentials(credMap["AccountPassword"], File(resourceUrl.file))
     val chainId = web3j.ethChainId().send().chainId.toLong()
     val mangler = RawTransactionManager(web3j, credentials, chainId)
-    val smartContract: XmlStorage =
-        XmlStorage.load(credMap["SmartContractAddress"], web3j, mangler, DefaultGasProvider())
 
     private fun validateUUID(ballotUUID: String) =
         database.from(Inflight)
@@ -128,6 +129,7 @@ class RecordBallot(val database: Database) {
                 Events.name,
                 Events.startDate,
                 Elections.name,
+                Elections.contractAddress,
                 Eligibilities.electionId,
                 Eligibilities.memberId,
                 Members.uuid
@@ -139,6 +141,7 @@ class RecordBallot(val database: Database) {
                     row.getLocalDate("events_start_date")!!,
                     row.getString("elections_name")!!,
                     row.getLong("eligibilities_election_id"),
+                    row.getString("elections_contract_address"),
                     row.getLong("eligibilities_member_id"),
                     row.getString("members_uuid")!!,
                     ballotUUID
@@ -235,18 +238,39 @@ class RecordBallot(val database: Database) {
         return xmlMapper.writeValueAsString(xmlBallot)
     }
 
-    private fun writeToBlockChain(smofMLString: String) {
-        smartContract.cast(smofMLString).send()
-        val oops = smartContract.get().send()
-        logger.info {
-            oops.joinToString("\n\n")
+    private fun writeToBlockChain(smofMLString: String, whoWhat: WhoWhat) {
+        val smartContract = if (whoWhat.electionContract == null) {
+            val newContract = BallotBox.deploy(web3j, mangler, DefaultGasProvider()).send()
+            database.update(Elections) {
+                set(Elections.contractAddress, newContract.contractAddress)
+                where { Elections.id eq whoWhat.electionId }
+            }
+            logger.warn { "Created new ballot box for election ${whoWhat.electionId}: ${whoWhat.electionContract}"}
+            newContract
+        } else {
+            BallotBox.load(whoWhat.electionContract, web3j, mangler, DefaultGasProvider())
         }
+        val ballotContract = com.smofs.Ballot.deploy(web3j, mangler, DefaultGasProvider()).send()
+        ballotContract.set(smofMLString).send()
+        smartContract.cast(ballotContract.contractAddress).send()
     }
 
     fun reset() {
-        smartContract.set("<Reset>${System.currentTimeMillis()}</Reset>").send()
-        database.update(Eligibilities) {
-            set(Eligibilities.status, "ELIGIBLE")
+        database.useConnection { conn ->
+            database.from(Elections)
+                .select(Elections.contractAddress)
+                .where(Elections.contractAddress.isNotNull())
+                .forEach { row ->
+                    val address = row.getString("elections_contract_address")
+                    val smartContract = BallotBox.load(address, web3j, mangler, DefaultGasProvider())
+                    smartContract.set("")
+                }
+            database.update(Elections) {
+                set(Elections.contractAddress, null)
+            }
+            database.update(Eligibilities) {
+                set(Eligibilities.status, "ELIGIBLE")
+            }
         }
     }
 
@@ -258,7 +282,7 @@ class RecordBallot(val database: Database) {
         }
         val inboundVotes = validateCategoriesAndVotes(whoWhat, meow.categories)
         val smofMLString = writeToXmlDocument(inboundVotes, meow.categories, whoWhat)
-        writeToBlockChain(smofMLString)
+        writeToBlockChain(smofMLString, whoWhat)
         writeToDatabase(json, inboundVotes, whoWhat)
         return "OK"
     }
