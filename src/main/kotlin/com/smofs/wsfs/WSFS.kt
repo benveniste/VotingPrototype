@@ -6,6 +6,8 @@ import com.smofs.wsfs.formats.jacksonMessageLens
 import com.smofs.wsfs.formats.jacksonXmlMessageLens
 import com.smofs.wsfs.models.EventModel
 import com.smofs.wsfs.models.FixedChoiceModel
+import com.smofs.wsfs.models.ViewBallotModel
+import com.smofs.wsfs.models.VotedModel
 import com.smofs.wsfs.models.WriteInModel
 import com.smofs.wsfs.models.oopsMyBad
 import com.smofs.wsfs.postgres.WSFSDataSource
@@ -89,6 +91,18 @@ val app: HttpHandler = oopsMyBad(renderer).then(
         "/submitBallot" bind POST to { request ->
             val alertText = RecordBallot(database).fromJson(request.bodyString())
             Response(OK).body(alertText)
+        },
+
+        "/voted" bind GET to SetHtmlContentType.then {
+            val id = it.queries("ballotContract").getOrElse(0) { "missing" }!!
+            val votedModel = VotedModel(id, WebForm())
+            Response(OK).body(renderer(votedModel))
+        },
+
+        "/peek" bind GET to SetHtmlContentType.then {
+            val id = it.queries("ballotContract").getOrElse(0) { "missing" }!!
+            val viewBallotModel = ViewBallotModel(id, WebForm())
+            Response(OK).body(renderer(viewBallotModel))
         },
 
         "/testing/hamkrest" bind GET to { request ->

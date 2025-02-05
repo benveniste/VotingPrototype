@@ -30,8 +30,8 @@
       }
       const response = await fetch("submitBallot", settings);
       const text = await response.text();
-      if (text === 'OK') {
-        window.location.href = okayUrl;
+      if (text.startsWith('OK|')) {
+        window.location.href = okayUrl + '?ballotContract=' + text.substring(3);
       } else {
         alert(text);
       }

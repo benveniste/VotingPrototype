@@ -238,7 +238,7 @@ class RecordBallot(val database: Database) {
         return xmlMapper.writeValueAsString(xmlBallot)
     }
 
-    private fun writeToBlockChain(smofMLString: String, whoWhat: WhoWhat) {
+    private fun writeToBlockChain(smofMLString: String, whoWhat: WhoWhat): String {
         val smartContract = if (whoWhat.electionContract == null) {
             val newContract = BallotBox.deploy(web3j, mangler, DefaultGasProvider()).send()
             database.update(Elections) {
@@ -253,6 +253,7 @@ class RecordBallot(val database: Database) {
         val ballotContract = com.smofs.Ballot.deploy(web3j, mangler, DefaultGasProvider()).send()
         ballotContract.set(smofMLString).send()
         smartContract.cast(ballotContract.contractAddress).send()
+        return ballotContract.contractAddress
     }
 
     fun reset() {
@@ -282,8 +283,8 @@ class RecordBallot(val database: Database) {
         }
         val inboundVotes = validateCategoriesAndVotes(whoWhat, meow.categories)
         val smofMLString = writeToXmlDocument(inboundVotes, meow.categories, whoWhat)
-        writeToBlockChain(smofMLString, whoWhat)
+        val ballotContract = writeToBlockChain(smofMLString, whoWhat)
         writeToDatabase(json, inboundVotes, whoWhat)
-        return "OK"
+        return "OK|" + ballotContract
     }
 }
