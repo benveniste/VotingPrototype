@@ -17,6 +17,7 @@ object Elections: Table<Election>("elections") {
     val allowWriteIns = boolean("allow_writeins").bindTo { it.allowWriteIns }
     val opens = date("voting_opens").bindTo { it.opens }
     val closes = date("voting_closes").bindTo { it.closes }
+    val contractAddress = varchar("contract_address").bindTo { it.contractAddress }
 }
 
 interface Election : Entity<Election> {
@@ -27,4 +28,5 @@ interface Election : Entity<Election> {
     val allowWriteIns: Boolean
     val opens: LocalDate?
     val closes: LocalDate?
+    val contractAddress: String
 }

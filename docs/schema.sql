@@ -56,7 +56,8 @@ CREATE TABLE public.elections (
     voting_opens date,
     voting_closes date,
     allow_writeins boolean,
-    max_votes integer NOT NULL DEFAULT 143
+    max_votes integer NOT NULL DEFAULT 143,
+    contract_address character varying(80)
 );
 COMMENT ON TABLE public.elections IS 'A set of voting items.';
 ALTER TABLE public.elections OWNER TO mhb;
