@@ -1,5 +1,6 @@
 package com.smofs.wsfs.blockchain
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.smofs.BallotBox
@@ -12,17 +13,20 @@ import org.hyperledger.fabric.client.identity.Signers
 import org.hyperledger.fabric.client.identity.X509Identity
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.web3j.crypto.WalletUtils
+import org.web3j.crypto.Credentials
+import org.web3j.crypto.Wallet
+import org.web3j.crypto.WalletFile
 import org.web3j.protocol.Web3j
 import org.web3j.protocol.http.HttpService
 import org.web3j.tx.RawTransactionManager
 import org.web3j.tx.gas.DefaultGasProvider
 import software.amazon.awssdk.utils.StringInputStream
-import java.io.File
 
 private val logger = KotlinLogging.logger {}
 
 class BlockTest {
+    private val mapper = jacksonObjectMapper()
+
     @Test
     @Disabled
     fun fetchTest() {
@@ -48,16 +52,16 @@ class BlockTest {
     // To create a new test contract, run:
     // val smartContract = BallotBox.deploy(web3j, mangler, DefaultGasProvider()).send()
     fun web3jTest() {
+        val credMap = AwsApi.getSecretMap("WSFS-Blockchain")
         val contractAddr = "0x09b92b29729ea287fcbab137acda723d25d553a3"
-        val web3j = Web3j.build(HttpService("http://localhost:8545"))
+        val web3j: Web3j = Web3j.build(HttpService(credMap["NodeURL"]))
         val web3ClientVersion = web3j.web3ClientVersion().send()
         val clientVersion = web3ClientVersion.web3ClientVersion
         requireNotNull(clientVersion)
         requireNotNull(contractAddr)
-        val credMap = AwsApi.getSecretMap("WSFS-Blockchain")
 
-        val resourceUrl = javaClass.getClassLoader().getResource("AccountKey.json")!!
-        val credentials = WalletUtils.loadCredentials(credMap["AccountPassword"], File(resourceUrl.file))
+        val wallet = mapper.readValue(credMap["AccountKey"], WalletFile::class.java)
+        val credentials = Credentials.create(Wallet.decrypt(credMap["AccountPassword"], wallet))
         val chainId = web3j.ethChainId().send().chainId.toLong()
         val mangler = RawTransactionManager(web3j, credentials, chainId)
         val smartContract = BallotBox.load(contractAddr, web3j, mangler, DefaultGasProvider())
