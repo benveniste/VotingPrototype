@@ -53,6 +53,8 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 val Database.personSequence get() = this.sequenceOf(Persons)
 val Database.eventSequence get() = this.sequenceOf(Events)
@@ -227,7 +229,7 @@ class DaoTest {
         assertThat("Not added?", added, equalTo(1))
     }
 
-    @OptIn(ExperimentalEncodingApi::class)
+    @OptIn(ExperimentalEncodingApi::class, ExperimentalUuidApi::class)
     private fun stash(ballot: Ballot) {
         val testData = mapper.writeValueAsString(ballot)
         val digest = MessageDigest.getInstance("RIPEMD128").digest("VeryLong_UserSuppliedKey".toByteArray())
@@ -240,6 +242,7 @@ class DaoTest {
             set(it.memberId, ballot.member)
             set(it.electionId, ballot.election)
             set(it.ballot, encryptedMessage)
+            set(it.voteUUID, Uuid.random().toString())
         }
         assertThat("Not added?", added, equalTo(1))
         database.from(Inflight)

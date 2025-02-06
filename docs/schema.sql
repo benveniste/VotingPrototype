@@ -1,8 +1,4 @@
---
--- PostgreSQL database dump
---
-
--- Dumped from database version 15.8 (Homebrew)
+-- Schema created via pg_dump and tweaked by hand.  Lovely.
 -- Dumped by pg_dump version 15.8 (Homebrew)
 
 SET statement_timeout = 0;
@@ -56,7 +52,6 @@ CREATE TABLE public.elections (
     voting_opens date,
     voting_closes date,
     allow_writeins boolean,
-    max_votes integer NOT NULL DEFAULT 143,
     contract_address character varying(80)
 );
 COMMENT ON TABLE public.elections IS 'A set of voting items.';
@@ -99,6 +94,7 @@ CREATE TABLE public.inflight (
     ballot text NOT NULL,
     vote_uuid character varying(64) NOT NULL
 );
+ALTER TABLE public.inflight OWNER TO mhb;
 
 --
 -- Name: members; Type: TABLE; Schema: public; Owner: mhb
@@ -426,7 +422,3 @@ CREATE INDEX idx_p_name ON public.persons USING btree (surname, first_name);
 -- Name: idx_onevote; Type: INDEX; Schema: public; Owner: mhb
 --
 CREATE UNIQUE INDEX idx_onevote ON public.votes USING btree (category_id, member_id, ordinal);
-
---
--- PostgreSQL database dump complete
---
