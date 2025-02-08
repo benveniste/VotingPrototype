@@ -40,6 +40,7 @@ import org.web3j.protocol.Web3j
 import org.web3j.protocol.http.HttpService
 import org.web3j.tx.RawTransactionManager
 import org.web3j.tx.gas.DefaultGasProvider
+import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -77,7 +78,7 @@ data class WhoWhat(
     val eventDate: LocalDate,
     val election: String,
     val electionId: Long,
-    val electionContract: String?,
+    val electionContract: String,
     val memberId: Long,
     val memberUuid: String,
     val ballotUuid: String
@@ -117,6 +118,16 @@ class RecordBallot(val database: Database) {
         private val mangler = RawTransactionManager(web3j, credentials, chainId)
     }
 
+    private fun newElectionContract(electionId: Long): String {
+        val newContract = BallotBox.deploy(web3j, mangler, DefaultGasProvider()).send()
+        database.update(Elections) {
+            set(Elections.contractAddress, newContract.contractAddress)
+            where { Elections.id eq electionId }
+        }
+        logger.warn { "Created new ballot box for election ${electionId}: ${newContract.contractAddress}"}
+        return newContract.contractAddress
+    }
+
     private fun validateUUID(ballotUUID: String) =
         database.from(Inflight)
             .innerJoin(Eligibilities,
@@ -136,12 +147,13 @@ class RecordBallot(val database: Database) {
             )
             .where((Inflight.voteUUID eq ballotUUID) and (Eligibilities.status eq "ELIGIBLE"))
             .map { row ->
+                val electionId =  row.getLong("eligibilities_election_id")
                 WhoWhat(
                     row.getString("events_name")!!,
                     row.getLocalDate("events_start_date")!!,
                     row.getString("elections_name")!!,
-                    row.getLong("eligibilities_election_id"),
-                    row.getString("elections_contract_address"),
+                    electionId,
+                    row.getString("elections_contract_address") ?: newElectionContract(electionId),
                     row.getLong("eligibilities_member_id"),
                     row.getString("members_uuid")!!,
                     ballotUUID
@@ -226,10 +238,12 @@ class RecordBallot(val database: Database) {
         } else {
             votes.first().castAt
         }
+        val hashBytes = MessageDigest.getInstance("SHA-256").digest(whoWhat.electionContract.toByteArray())
         val xmlBallot = XmlBallot(
             whoWhat.event,
             whoWhat.eventDate.toString(),
             whoWhat.election,
+            hashBytes.joinToString("") { "%02x".format(it) },
             DateTimeFormatter.ISO_DATE_TIME.format(voteAt),
             whoWhat.memberUuid,
             whoWhat.ballotUuid,
@@ -239,20 +253,10 @@ class RecordBallot(val database: Database) {
     }
 
     private fun writeToBlockChain(smofMLString: String, whoWhat: WhoWhat): String {
-        val smartContract = if (whoWhat.electionContract == null) {
-            val newContract = BallotBox.deploy(web3j, mangler, DefaultGasProvider()).send()
-            database.update(Elections) {
-                set(Elections.contractAddress, newContract.contractAddress)
-                where { Elections.id eq whoWhat.electionId }
-            }
-            logger.warn { "Created new ballot box for election ${whoWhat.electionId}: ${newContract.contractAddress}"}
-            newContract
-        } else {
-            BallotBox.load(whoWhat.electionContract, web3j, mangler, DefaultGasProvider())
-        }
+        val electionContract = BallotBox.load(whoWhat.electionContract, web3j, mangler, DefaultGasProvider())
         val ballotContract = com.smofs.Ballot.deploy(web3j, mangler, DefaultGasProvider()).send()
         ballotContract.set(smofMLString).send()
-        smartContract.cast(ballotContract.contractAddress).send()
+        electionContract.cast(ballotContract.contractAddress).send()
         return ballotContract.contractAddress
     }
 

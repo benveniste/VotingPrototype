@@ -10,9 +10,9 @@ data class XmlCategory(
 
 data class XmlBallot(
     val event: String,
-    @JacksonXmlProperty(localName = "event_date")
     val eventDate: String,
     val election: String,
+    var electionHash: String?,
     val castAt: String?,
     val memberUUID: String,
     val ballotUUID: String,
