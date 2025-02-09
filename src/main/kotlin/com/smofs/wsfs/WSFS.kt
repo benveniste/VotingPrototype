@@ -93,7 +93,16 @@ val app: HttpHandler = oopsMyBad(renderer).then(
         },
 
         "/submitBallot" bind POST to { request ->
-            val alertText = RecordBallot(database).fromJson(request.bodyString())
+            @Suppress("TooGenericExceptionCaught")
+            val alertText = try {
+                RecordBallot(database).fromJson(request.bodyString())
+            } catch (oops: ExceptionInInitializerError) {
+                logger.error { oops.javaClass.name + " at: \n" + oops.stackTrace.joinToString("\n") }
+                "Could not initialize ballot system.  Check connection to blockchain."
+            } catch (oops: Throwable) {
+                logger.error { oops.message + " at \n" + oops.stackTrace.joinToString("\n") }
+                oops.message ?: "Unknown exception"
+            }
             Response(OK).body(alertText)
         },
 

@@ -22,9 +22,11 @@ import mu.KotlinLogging
 import org.ktorm.database.Database
 import org.ktorm.dsl.and
 import org.ktorm.dsl.batchInsert
+import org.ktorm.dsl.delete
 import org.ktorm.dsl.eq
 import org.ktorm.dsl.forEach
 import org.ktorm.dsl.from
+import org.ktorm.dsl.greater
 import org.ktorm.dsl.innerJoin
 import org.ktorm.dsl.isNotNull
 import org.ktorm.dsl.leftJoin
@@ -276,6 +278,8 @@ class RecordBallot(val database: Database) {
             database.update(Eligibilities) {
                 set(Eligibilities.status, "ELIGIBLE")
             }
+            database.delete(Inflight) { it.id greater 0 }
+            database.delete(Votes) { it.id greater 0 }
         }
     }
 

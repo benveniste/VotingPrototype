@@ -12,6 +12,14 @@
           font: 16px Arial;
         }
 
+        .choices {
+          border: 1px solid black;
+          thead {
+            color: white;
+            background: black;
+          }
+        }
+
         /*the container must be positioned relative:*/
         .autocomplete {
           position: relative;
@@ -106,6 +114,10 @@
     submit(ballot, "voted");
     return false;
   }
+
+  function stuff(pick, place) {
+     document.getElementById("myInput" + place).value = pick.innerText;
+  }
 </script>
 
 <body>
@@ -115,7 +127,17 @@
     Nominate by typing a few letters of your choice.  (Write-ins permitted):<br/><br/>
     {{#each categories}}
     <h2>{{this.name}}</h2>
-    <div class="autocomplete" style="width:600px">
+    <div id="known{{this.catId}}" style="width:75%; display: none">
+        <table class="choices">
+            <thead><tr><td>Known Candidates</td></tr></thead>
+            <tbody>
+              {{#each candidates}}
+                <tr><td onclick="stuff(this, {{../catId}})">{{this.description}}</td></tr>
+              {{/each}}
+            </tbody>
+        </table>
+    </div>
+    <div class="autocomplete" style="width:75%">
       <label for="myInput{{this.catId}}">{{this.description}}</label>
       <input id="myInput{{this.catId}}" type="text" name="nominate{{this.catId}}"  placeholder="Candidate">
     </div>
@@ -139,6 +161,11 @@
       removeOnSpill: true
     }
     let sortable{{this.catId}} = new Sortable(document.getElementById("choices{{this.catId}}"), opts{{this.catId}});
+    {{#each this.candidates}}
+        {{#if @first}}
+            document.getElementById("known{{../catId}}").style.display = "block";
+        {{/if}}
+    {{/each}}
   {{/each}}
 </script>
 </body>
