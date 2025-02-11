@@ -60,7 +60,10 @@ clef will ask for a password and create a second file in $LOCUS/keystore with a 
 with UTF--.  Transfer this password and the contents of the file to AWS secrets.
 
 The next step is to "fund" the account you just created.  While geth is running, connect
-to with the following command.  You can then exit this program by typing control-D.  (Old-school Unix/Linux geeks
+to with the following command.  
+`geth attach $LOCUS/geth.ipc`
+
+You can then exit this program by typing control-D.  (Old-school Unix/Linux geeks
 rejoice)
 `eth.sendTransaction({from: eth.accounts[0], to: eth.accounts[1], value: web3.toWei(50, "ether")})
 `  
