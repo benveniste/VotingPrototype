@@ -6,6 +6,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 plugins {
     kotlin("jvm") version "2.0.20"
     id("io.gitlab.arturbosch.detekt").version("1.23.7")
+    // WHo knows what evil lurks in the heart of docker?
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 tasks.withType<Detekt>().configureEach {
@@ -103,6 +105,15 @@ tasks {
     java {
         sourceCompatibility = VERSION_21
         targetCompatibility = VERSION_21
+    }
+
+    shadowJar {
+        archiveBaseName.set("VotingPrototype")
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        mergeServiceFiles()
+        manifest {
+            attributes("Main-Class" to "com.smofs.wsfs.WSFS")
+        }
     }
 }
 
