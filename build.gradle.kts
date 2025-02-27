@@ -14,6 +14,10 @@ tasks.withType<Detekt>().configureEach {
     jvmTarget = "21"
 }
 
+tasks.build {
+    dependsOn("shadowJar")
+}
+
 buildscript {
     repositories {
         mavenCentral()
@@ -112,7 +116,7 @@ tasks {
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         mergeServiceFiles()
         manifest {
-            attributes("Main-Class" to "com.smofs.wsfs.WSFS")
+            attributes("Main-Class" to "com.smofs.wsfs.WSFSKt")
         }
     }
 }
